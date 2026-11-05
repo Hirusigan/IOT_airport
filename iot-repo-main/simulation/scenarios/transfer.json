@@ -1,0 +1,31 @@
+{
+  "airports": [
+    { "code": "AAR", "name": "Aarhus Airport", "latitude": 56.3, "longitude": 10.619, "host": "aar", "port": 1883 },
+    { "code": "CPH", "name": "Copenhagen Airport", "latitude": 55.618, "longitude": 12.656, "host": "cph", "port": 1883 }
+  ],
+  "devices": [
+    { "airportId": "AAR", "id": "scanner-001", "type": "scanner" },
+    { "airportId": "AAR", "id": "gate-01", "type": "gate" },
+    { "airportId": "CPH", "id": "scanner-001", "type": "scanner" },
+    { "airportId": "CPH", "id": "gate-01", "type": "gate" }
+  ],
+  "flights": [
+    { "flightId": "FLIGHT-OUT", "number": "SK100", "origin": "AAR", "destination": "CPH", "departureTime": 30 },
+    { "flightId": "FLIGHT-RETURN", "number": "SK101", "origin": "CPH", "destination": "AAR", "departureTime": 75 }
+  ],
+  "luggage": [
+    { "luggageId": "BAG-TRANSFER", "journeyId": "LEG-1", "flightId": "FLIGHT-OUT", "tripId": "TRIP-1", "legOrder": 1 },
+    { "luggageId": "BAG-TRANSFER", "journeyId": "LEG-2", "flightId": "FLIGHT-RETURN", "tripId": "TRIP-1", "legOrder": 2 }
+  ],
+  "events": [
+    { "time": 2, "eventType": "luggage", "airport": "AAR", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-1", "sequence": 1, "stage": "checkin" },
+    { "time": 8, "eventType": "luggage", "airport": "AAR", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-1", "sequence": 2, "stage": "sorted" },
+    { "time": 15, "eventType": "luggage", "airport": "AAR", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-1", "sequence": 3, "stage": "loaded", "flightId": "FLIGHT-OUT" },
+    { "time": 30, "eventType": "departure", "airport": "AAR", "deviceId": "gate-01", "flightId": "FLIGHT-OUT" },
+    { "time": 45, "eventType": "luggage", "airport": "CPH", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-1", "sequence": 4, "stage": "arrived" },
+    { "time": 50, "eventType": "luggage", "airport": "CPH", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-2", "sequence": 1, "stage": "sorted" },
+    { "time": 60, "eventType": "luggage", "airport": "CPH", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-2", "sequence": 2, "stage": "loaded", "flightId": "FLIGHT-RETURN" },
+    { "time": 75, "eventType": "departure", "airport": "CPH", "deviceId": "gate-01", "flightId": "FLIGHT-RETURN" },
+    { "time": 90, "eventType": "luggage", "airport": "AAR", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-2", "sequence": 3, "stage": "arrived" }
+  ]
+}

@@ -1,0 +1,107 @@
+services:
+  bootstrap:
+    image: andreasfrost1004/luggagetracker-bootstrap:latest
+    build: {context: ., dockerfile: docker/bootstrap.Dockerfile}
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-}
+      BACKEND_MQTT_PASSWORD: ${BACKEND_MQTT_PASSWORD:-}
+      BRIDGE_AAR_PASSWORD: ${BRIDGE_AAR_PASSWORD:-}
+      BRIDGE_CPH_PASSWORD: ${BRIDGE_CPH_PASSWORD:-}
+    volumes: ["runtime-config:/runtime"]
+  postgres:
+    image: postgres:17.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: luggage
+      POSTGRES_USER: luggage
+      POSTGRES_PASSWORD_FILE: /runtime/postgres-password
+    volumes: ["postgres-data:/var/lib/postgresql/data", "runtime-config:/runtime:ro"]
+    depends_on:
+      bootstrap: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U luggage -d luggage"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  regional:
+    image: eclipse-mosquitto:2.0.22
+    restart: unless-stopped
+    command: ["mosquitto", "-c", "/runtime/regional.conf"]
+    volumes: ["runtime-config:/runtime:ro", "regional-data:/mosquitto/data"]
+    depends_on:
+      bootstrap: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -u backend -P \"$$(cat /runtime/backend-password)\" -t '$$SYS/broker/version' -C 1 -W 3 >/dev/null"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+  aar:
+    image: eclipse-mosquitto:2.0.22
+    restart: unless-stopped
+    command: ["mosquitto", "-c", "/runtime/AAR.conf"]
+    volumes: ["runtime-config:/runtime:ro", "aar-data:/mosquitto/data"]
+    depends_on:
+      regional: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -u sim-AAR -P \"$$(cat /runtime/simulation-password)\" -t '$$SYS/broker/version' -C 1 -W 3 >/dev/null"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+  cph:
+    image: eclipse-mosquitto:2.0.22
+    restart: unless-stopped
+    command: ["mosquitto", "-c", "/runtime/CPH.conf"]
+    volumes: ["runtime-config:/runtime:ro", "cph-data:/mosquitto/data"]
+    depends_on:
+      regional: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -u sim-CPH -P \"$$(cat /runtime/simulation-password)\" -t '$$SYS/broker/version' -C 1 -W 3 >/dev/null"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+  backend:
+    image: andreasfrost1004/luggagetracker-backend:latest
+    build: {context: ., dockerfile: backend/Dockerfile}
+    restart: unless-stopped
+    environment:
+      GENERATED_CONFIG_PATH: /runtime/backend.json
+      Mqtt__Region: EU
+      Rules__LoadingCutoffSeconds: 20
+      Rules__GraceSeconds: 5
+      Rules__StaleSeconds: 30
+    volumes: ["runtime-config:/runtime:ro", "simulation-runs:/runs"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      aar: {condition: service_healthy}
+      cph: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  frontend:
+    image: andreasfrost1004/luggagetracker-frontend:latest
+    build: ./frontend
+    restart: unless-stopped
+    networks: [default, ingress]
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+  tests:
+    build: {context: ., dockerfile: backend-tests/Dockerfile}
+    profiles: ["tests"]
+networks:
+  ingress:
+    external: true
+volumes:
+  runtime-config:
+  postgres-data:
+  regional-data:
+  aar-data:
+  cph-data:
+  simulation-runs:

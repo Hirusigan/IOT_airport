@@ -1,0 +1,91 @@
+{
+  "airports": [
+    {
+      "latitude": 56.3,
+      "name": "Aarhus Airport",
+      "host": "aar",
+      "longitude": 10.619,
+      "port": 1883,
+      "code": "AAR"
+    },
+    {
+      "latitude": 55.618,
+      "name": "Copenhagen Airport",
+      "host": "cph",
+      "longitude": 12.656,
+      "port": 1883,
+      "code": "CPH"
+    }
+  ],
+  "devices": [
+    {
+      "airportId": "AAR",
+      "id": "scanner-001",
+      "type": "scanner"
+    },
+    {
+      "airportId": "AAR",
+      "id": "gate-01",
+      "type": "gate"
+    },
+    {
+      "airportId": "CPH",
+      "id": "scanner-001",
+      "type": "scanner"
+    },
+    {
+      "airportId": "CPH",
+      "id": "gate-01",
+      "type": "gate"
+    }
+  ],
+  "events": [
+    {
+      "time": 4,
+      "sequence": 1,
+      "deviceId": "scanner-001",
+      "luggageId": "BAG-002",
+      "stage": "checkin",
+      "airport": "AAR",
+      "eventType": "luggage",
+      "journeyId": "JOURNEY-002"
+    },
+    {
+      "airport": "AAR",
+      "time": 60,
+      "deviceId": "gate-01",
+      "flightId": "FLIGHT-001",
+      "eventType": "departure"
+    },
+    {
+      "airport": "AAR",
+      "time": 65,
+      "deviceId": "gate-01",
+      "flightId": "FLIGHT-002",
+      "eventType": "departure"
+    }
+  ],
+  "luggage": [
+    {
+      "luggageId": "BAG-002",
+      "journeyId": "JOURNEY-002",
+      "flightId": "FLIGHT-001"
+    }
+  ],
+  "flights": [
+    {
+      "departureTime": 60,
+      "origin": "AAR",
+      "flightId": "FLIGHT-001",
+      "destination": "CPH",
+      "number": "SK100"
+    },
+    {
+      "departureTime": 65,
+      "origin": "AAR",
+      "flightId": "FLIGHT-002",
+      "destination": "CPH",
+      "number": "SK200"
+    }
+  ]
+}

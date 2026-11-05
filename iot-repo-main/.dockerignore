@@ -1,0 +1,10 @@
+.git
+.env
+.secrets
+.tools
+**/node_modules
+**/bin
+**/obj
+**/build
+**/dist
+**/TestResults

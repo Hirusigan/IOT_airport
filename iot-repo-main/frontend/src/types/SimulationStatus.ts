@@ -1,0 +1,1 @@
+export interface SimulationStatus { state: 'Idle' | 'Starting' | 'Running' | 'Completed' | 'Stopped' | 'Failed' | 'Interrupted'; scenarioId: string | null; runId: string | null; startedAt: string | null; publishedEvents: number; totalEvents: number; error: string | null }
