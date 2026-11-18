@@ -1,4 +1,5 @@
 namespace Luggage;
+
 public class DeadlineService(IRuleService rules, IUnitOfWork work, ProcessingGate gate, IDashboardNotifier notifications, TimeProvider clock) : IDeadlineService
 {
     public async Task Evaluate()

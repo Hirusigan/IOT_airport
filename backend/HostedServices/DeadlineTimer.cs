@@ -1,4 +1,5 @@
 namespace Luggage;
+
 public class DeadlineTimer(IServiceScopeFactory scopes, ILogger<DeadlineTimer> log) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken token)

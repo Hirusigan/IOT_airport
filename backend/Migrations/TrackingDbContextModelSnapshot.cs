@@ -166,6 +166,9 @@ namespace Backend.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<DateTimeOffset?>("ActualArrival")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTimeOffset?>("ActualDeparture")
                         .HasColumnType("timestamp with time zone");
 
@@ -184,6 +187,9 @@ namespace Backend.Migrations
                     b.Property<string>("RunId")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("ScheduledArrival")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("ScheduledDeparture")
                         .HasColumnType("timestamp with time zone");

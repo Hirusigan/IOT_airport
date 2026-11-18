@@ -1,4 +1,5 @@
 namespace Luggage;
+
 public class DiagnosticService(IDiagnosticRepository diagnostics, IUnitOfWork work, TimeProvider clock) : IDiagnosticService
 {
     public async Task Record(string topic, string reason)

@@ -1,4 +1,5 @@
 namespace Luggage;
+
 public interface IEventRepository : IRepository<Observation>
 {
     Task<bool> ExistsAsync(string eventId);

@@ -1,23 +1,19 @@
-using MQTTnet;
-using MQTTnet.Protocol;
-var app = WebApplication.Create(args);
+using IotDeviceSimulator;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSingleton<IDeviceSimulator, DeviceSimulator>();
+builder.Services.AddSingleton<IMqttEventPublisher, MqttEventPublisher>();
+
+var app = builder.Build();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
-app.MapPost("/publish", async (PublishRequest request, IConfiguration config, CancellationToken token) =>
+app.MapPost("/devices/actions", async (DeviceActionCommand command, IDeviceSimulator simulator, CancellationToken token) =>
 {
     try
     {
-        var factory = new MqttFactory();
-        using var client = factory.CreateMqttClient();
-        var options = new MqttClientOptionsBuilder().WithClientId($"device-{request.AirportId}-{Guid.NewGuid():N}")
-            .WithTcpServer(request.Host, request.Port).Build();
-        await client.ConnectAsync(options, token);
-        var message = new MqttApplicationMessageBuilder().WithTopic(request.Topic).WithPayload(request.Payload)
-            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce).WithRetainFlag(false).Build();
-        await client.PublishAsync(message, token);
-        await client.DisconnectAsync();
+        await simulator.Execute(command, token);
         return Results.Accepted();
     }
-    catch (Exception e) { return Results.Problem(e.Message); }
+    catch (ArgumentException e) { return Results.BadRequest(new { error = e.Message }); }
+    catch (InvalidOperationException e) { return Results.BadRequest(new { error = e.Message }); }
 });
 app.Run();
-record PublishRequest(string AirportId, string Host, int Port, string Topic, string Payload);

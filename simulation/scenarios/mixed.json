@@ -162,6 +162,7 @@
   "flights": [
     {
       "departureTime": 60,
+      "arrivalTime": 75,
       "origin": "AAR",
       "flightId": "FLIGHT-001",
       "destination": "CPH",
@@ -169,6 +170,7 @@
     },
     {
       "departureTime": 65,
+      "arrivalTime": 80,
       "origin": "AAR",
       "flightId": "FLIGHT-002",
       "destination": "CPH",

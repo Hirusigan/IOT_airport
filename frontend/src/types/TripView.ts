@@ -4,7 +4,12 @@ import type { TripLeg } from './TripLeg';
 export interface TripView {
   id: string;
   airports: Airport[];
-  legs: { leg: TripLeg; route: [number, number][]; color: string; status: string }[];
+  legs: {
+    leg: TripLeg;
+    route: [number, number][];
+    color: string;
+    status: string;
+  }[];
   position: MapPosition | null;
   positionKey: string;
   label: string;

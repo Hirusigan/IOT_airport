@@ -1,4 +1,5 @@
 namespace Luggage;
+
 public class JourneyRepository(TrackingDbContext db) : BaseRepository<Journey>(db), IJourneyRepository
 {
     public Task<Journey?> GetAsync(string id) => FindAsync(id);

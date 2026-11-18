@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MapPosition } from '../types/MapPosition';
 
-export function useLuggageAnimation(tripId: string, positionKey: string, target: MapPosition | null) {
+export function useLuggageAnimation(
+  tripId: string,
+  positionKey: string,
+  target: MapPosition | null,
+) {
   const [position, setPosition] = useState<MapPosition | null>(target);
   const current = useRef(target);
   const previousTrip = useRef(tripId);
@@ -12,8 +16,16 @@ export function useLuggageAnimation(tripId: string, positionKey: string, target:
     const changedObservation = previousKey.current !== positionKey;
     previousTrip.current = tripId;
     previousKey.current = positionKey;
-    if (changedTrip || !from || !target || !changedObservation || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      current.current = target; setPosition(target); return;
+    if (
+      changedTrip ||
+      !from ||
+      !target ||
+      !changedObservation ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      current.current = target;
+      setPosition(target);
+      return;
     }
     let frame = 0;
     const started = performance.now();
@@ -24,13 +36,24 @@ export function useLuggageAnimation(tripId: string, positionKey: string, target:
         latitude: from.latitude + (target.latitude - from.latitude) * t,
         longitude: from.longitude + (target.longitude - from.longitude) * t,
         offsetX: from.offsetX + (target.offsetX - from.offsetX) * t,
-        offsetY: from.offsetY + (target.offsetY - from.offsetY) * t - Math.sin(Math.PI * t) * 10,
+        offsetY:
+          from.offsetY +
+          (target.offsetY - from.offsetY) * t -
+          Math.sin(Math.PI * t) * 10,
       };
-      current.current = next; setPosition(next);
+      current.current = next;
+      setPosition(next);
       if (progress < 1) frame = requestAnimationFrame(animate);
     };
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
-  }, [tripId, positionKey, target?.latitude, target?.longitude, target?.offsetX, target?.offsetY]);
+  }, [
+    tripId,
+    positionKey,
+    target?.latitude,
+    target?.longitude,
+    target?.offsetX,
+    target?.offsetY,
+  ]);
   return position;
 }

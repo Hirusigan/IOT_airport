@@ -1,4 +1,5 @@
 namespace Luggage;
+
 public interface IJourneyRepository : IRepository<Journey>
 {
     Task<Journey?> GetAsync(string id);

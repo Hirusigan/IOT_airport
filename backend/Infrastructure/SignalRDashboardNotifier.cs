@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 namespace Luggage;
+
 public class SignalRDashboardNotifier(IHubContext<DashboardHub> hub) : IDashboardNotifier
 {
     public async Task Send(string? journeyId = null)

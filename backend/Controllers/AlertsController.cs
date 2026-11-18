@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 namespace Luggage;
+
 [ApiController, Route("api/alerts")]
 public class AlertsController(IAlertService alerts) : ControllerBase
 {

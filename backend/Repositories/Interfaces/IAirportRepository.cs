@@ -1,4 +1,5 @@
 namespace Luggage;
+
 public interface IAirportRepository : IRepository<Airport>
 {
     Task<Airport?> GetAsync(string id);

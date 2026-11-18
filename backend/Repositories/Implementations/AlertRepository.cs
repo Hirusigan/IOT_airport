@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 namespace Luggage;
+
 public class AlertRepository(TrackingDbContext db) : BaseRepository<Alert>(db), IAlertRepository
 {
     public async Task<Alert?> GetAsync(AlertType type, string journeyId, string flightId) =>

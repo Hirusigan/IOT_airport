@@ -1,4 +1,5 @@
 namespace Luggage;
+
 public class LuggageService(IJourneyRepository journeys, ILuggageStateRepository states, IAssignmentRepository assignments, IEventRepository events, IFlightRepository flights) : ILuggageService
 {
     public async Task<LuggageDTO?> Get(string id)

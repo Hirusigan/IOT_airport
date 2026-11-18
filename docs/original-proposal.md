@@ -8,22 +8,22 @@ The system simulates several airports and tracks luggage as it moves through the
 
 Each stage of the luggage flow is represented as a simulated **IoT device**, for example:
 
-* Check-in scanner
-* Security scanner
-* Sorting system
-* Transfer belt
-* Gate loading scanner
-* Aircraft loading scanner
+- Check-in scanner
+- Security scanner
+- Sorting system
+- Transfer belt
+- Gate loading scanner
+- Aircraft loading scanner
 
 The system provides real-time monitoring through a React frontend containing:
 
-* A visual airport map
-* Airport health indicators
-* Baggage search
-* Alerts
-* Device status
-* Statistics
-* Live baggage events
+- A visual airport map
+- Airport health indicators
+- Baggage search
+- Alerts
+- Device status
+- Statistics
+- Live baggage events
 
 All components run as Docker containers and can be started using Docker Compose.
 
@@ -33,15 +33,15 @@ All components run as Docker containers and can be started using Docker Compose.
 
 The system should demonstrate several core IoT concepts:
 
-* MQTT publish/subscribe communication
-* Multiple independently simulated IoT devices
-* Real-time event processing
-* Device monitoring
-* Baggage tracking
-* Alert generation
-* Persistent storage
-* Real-time frontend updates
-* Multi-airport visualization
+- MQTT publish/subscribe communication
+- Multiple independently simulated IoT devices
+- Real-time event processing
+- Device monitoring
+- Baggage tracking
+- Alert generation
+- Persistent storage
+- Real-time frontend updates
+- Multi-airport visualization
 
 Physical IoT hardware is not required. The IoT devices are simulated in software.
 
@@ -51,12 +51,12 @@ Physical IoT hardware is not required. The IoT devices are simulated in software
 
 ## Frontend
 
-* React
-* TypeScript
-* Vite
-* Leaflet
-* OpenStreetMap
-* SignalR client
+- React
+- TypeScript
+- Vite
+- Leaflet
+- OpenStreetMap
+- SignalR client
 
 The frontend is responsible only for displaying and interacting with system data.
 
@@ -64,11 +64,11 @@ The frontend is responsible only for displaying and interacting with system data
 
 ## Backend
 
-* C#
-* ASP.NET Core Web API
-* MQTTnet
-* Entity Framework Core
-* SignalR
+- C#
+- ASP.NET Core Web API
+- MQTTnet
+- Entity Framework Core
+- SignalR
 
 The backend receives IoT events through MQTT, tracks baggage state, creates alerts, persists data and exposes data to the frontend.
 
@@ -76,29 +76,29 @@ The backend receives IoT events through MQTT, tracks baggage state, creates aler
 
 ## Simulator
 
-* C#
-* .NET Worker Service
-* MQTTnet
+- C#
+- .NET Worker Service
+- MQTTnet
 
 The simulator generates:
 
-* Airports
-* Flights
-* Bags
-* IoT devices
-* Baggage movement
-* Device heartbeat messages
-* Normal events
-* Failure scenarios
+- Airports
+- Flights
+- Bags
+- IoT devices
+- Baggage movement
+- Device heartbeat messages
+- Normal events
+- Failure scenarios
 
 ---
 
 ## Infrastructure
 
-* Eclipse Mosquitto
-* PostgreSQL
-* Docker
-* Docker Compose
+- Eclipse Mosquitto
+- PostgreSQL
+- Docker
+- Docker Compose
 
 ---
 
@@ -540,11 +540,11 @@ airport/+/device/+/heartbeat
 
 Responsible for:
 
-* Tracking current bag location
-* Updating bag status
-* Maintaining baggage event history
-* Checking the expected next step
-* Associating baggage with flights
+- Tracking current bag location
+- Updating bag status
+- Maintaining baggage event history
+- Checking the expected next step
+- Associating baggage with flights
 
 ---
 
@@ -554,12 +554,12 @@ Responsible for detecting problems.
 
 Examples:
 
-* Delayed bag
-* Stuck bag
-* Bag likely to miss flight
-* Bag routed to wrong location
-* Bag detected at wrong airport
-* Missing baggage updates
+- Delayed bag
+- Stuck bag
+- Bag likely to miss flight
+- Bag routed to wrong location
+- Bag detected at wrong airport
+- Missing baggage updates
 
 ---
 
@@ -567,10 +567,10 @@ Examples:
 
 Responsible for:
 
-* Monitoring device heartbeats
-* Tracking online/offline state
-* Detecting device failures
-* Maintaining device information
+- Monitoring device heartbeats
+- Tracking online/offline state
+- Detecting device failures
+- Maintaining device information
 
 ---
 
@@ -578,13 +578,13 @@ Responsible for:
 
 Responsible for calculating:
 
-* Bags processed
-* Delays
-* Misroutes
-* Processing times
-* Alerts per airport
-* Device uptime
-* Current airport load
+- Bags processed
+- Delays
+- Misroutes
+- Processing times
+- Alerts per airport
+- Device uptime
+- Current airport load
 
 ---
 
@@ -706,10 +706,10 @@ One or more warnings.
 
 Examples:
 
-* Bag stuck in sorting
-* Bag delayed
-* Bag may miss upcoming flight
-* Device temporarily offline
+- Bag stuck in sorting
+- Bag delayed
+- Bag may miss upcoming flight
+- Device temporarily offline
 
 ### Red
 
@@ -717,10 +717,10 @@ Critical problem.
 
 Examples:
 
-* Bag routed to wrong airport
-* Bag loaded for wrong flight
-* Serious device failure
-* Missing luggage
+- Bag routed to wrong airport
+- Bag loaded for wrong flight
+- Serious device failure
+- Missing luggage
 
 ---
 
@@ -790,10 +790,10 @@ The view could also display the latest baggage events.
 
 Users should be able to search by:
 
-* Bag ID
-* Flight
-* Airport
-* Alert type
+- Bag ID
+- Flight
+- Airport
+- Alert type
 
 Example:
 
@@ -864,24 +864,24 @@ Suggested columns:
 
 Possible statistics include:
 
-* Bags processed today
-* Bags currently in transit
-* Average baggage processing time
-* Delayed bags
-* Misrouted bags
-* Missing bags
-* Alerts per airport
-* Device uptime
-* Busiest airport
+- Bags processed today
+- Bags currently in transit
+- Average baggage processing time
+- Delayed bags
+- Misrouted bags
+- Missing bags
+- Alerts per airport
+- Device uptime
+- Busiest airport
 
 Suggested charts:
 
-* Bags processed per hour
-* Alerts per airport
-* Alerts grouped by severity
-* Average processing time per stage
-* Device uptime
-* Baggage volume per airport
+- Bags processed per hour
+- Alerts per airport
+- Alerts grouped by severity
+- Average processing time per stage
+- Device uptime
+- Baggage volume per airport
 
 ---
 
@@ -1011,10 +1011,10 @@ The simulator should generate both correct and incorrect behavior.
 
 ## Normal Behavior
 
-* Bag moves through correct route
-* Devices report scans
-* Flights depart normally
-* Devices send heartbeats
+- Bag moves through correct route
+- Devices report scans
+- Flights depart normally
+- Devices send heartbeats
 
 ---
 
@@ -1163,7 +1163,6 @@ A simplified setup:
 
 ```yaml
 services:
-
   mqtt:
     image: eclipse-mosquitto
     ports:
@@ -1332,11 +1331,11 @@ Docker Host
 
 The simulated devices remain separate at the IoT/MQTT level through:
 
-* Unique device IDs
-* Separate state
-* Independent heartbeat messages
-* Device-specific MQTT topics
-* Independent simulated failures
+- Unique device IDs
+- Separate state
+- Independent heartbeat messages
+- Device-specific MQTT topics
+- Independent simulated failures
 
 ---
 

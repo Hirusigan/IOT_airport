@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 namespace Luggage;
+
 [ApiController, Route("api/luggage")]
 public class LuggageController(ILuggageService luggage) : ControllerBase
 {

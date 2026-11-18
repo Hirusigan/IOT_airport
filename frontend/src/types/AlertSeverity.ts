@@ -1,1 +1,4 @@
-export enum AlertSeverity { Orange = 'orange', Red = 'red' }
+export enum AlertSeverity {
+  Orange = 'orange',
+  Red = 'red',
+}

@@ -1,4 +1,5 @@
 namespace Luggage;
+
 public interface ILuggageStateRepository : IRepository<LuggageState>
 {
     Task<LuggageState?> GetAsync(string journeyId);

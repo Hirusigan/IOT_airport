@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 namespace Luggage;
+
 public class FlightRepository(TrackingDbContext db) : BaseRepository<Flight>(db), IFlightRepository
 {
     public Task<Flight?> GetAsync(string id) => FindAsync(id);

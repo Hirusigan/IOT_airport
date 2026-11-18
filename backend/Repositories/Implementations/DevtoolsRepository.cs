@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 namespace Luggage;
+
 public class DevtoolsRepository(TrackingDbContext db) : IDevtoolsRepository
 {
     public async Task ClearAsync()

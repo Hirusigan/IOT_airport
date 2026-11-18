@@ -6,7 +6,7 @@ Controllers handle HTTP routing and response codes, and call service interfaces.
 
 Repositories share the scoped EF `TrackingDbContext` and `IUnitOfWork`. The singleton processing gate serializes schedule registration, ingestion, airport registration, and timer evaluation. Notifications follow successful commits.
 
-`AirportService` registers flight schedules and airport metadata. New airport metadata triggers `IAirportBrokerProvisioner`, which writes an airport-scoped Mosquitto config and ACL to a shared Docker volume and starts a fixed Mosquitto image through Docker.DotNet on the private broker network. `SimulationRunner` preserves the backend Devtools API while proxying start/stop and status to Airport Simulation over HTTP.
+`AirportService` registers flight schedules and airport metadata. New airport metadata triggers `IAirportBrokerProvisioner`, which writes an airport-scoped Mosquitto config and ACL to a shared Docker volume and starts a fixed Mosquitto image through Docker.DotNet on the private broker network. `SimulationRunner` preserves the backend Devtools API while proxying the scenario catalog, start/stop, and status to Airport Simulation over HTTP. Airport Simulation is the source of the supported scenario list.
 
 `EventProcessingService` validates and stores MQTT observations. A first check-in includes the planned flight ID; within the same transaction the backend creates the trip, journey, and assignment needed by downstream state and alert processing. Departure messages update actual flight departure. Later trip legs still require confirmed arrival and departure/loading evidence for the preceding leg.
 

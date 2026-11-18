@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 namespace Luggage;
+
 [ApiController, Route("api/airports")]
 public class AirportsController(IAirportService airports) : ControllerBase
 {
@@ -29,6 +30,13 @@ public class AirportsController(IAirportService airports) : ControllerBase
     public async Task<IActionResult> Departure(string flightId, FlightDepartureUpdate departure)
     {
         try { await airports.RecordDeparture(flightId, departure); return Accepted(); }
+        catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        catch (ConflictException ex) { return Conflict(ex.Message); }
+    }
+    [HttpPost("flights/{flightId}/arrival")]
+    public async Task<IActionResult> Arrival(string flightId, FlightArrivalUpdate arrival)
+    {
+        try { await airports.RecordArrival(flightId, arrival); return Accepted(); }
         catch (ArgumentException ex) { return BadRequest(ex.Message); }
         catch (ConflictException ex) { return Conflict(ex.Message); }
     }

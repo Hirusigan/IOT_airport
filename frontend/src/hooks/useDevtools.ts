@@ -19,21 +19,58 @@ export function useDevtools() {
       if (polling) return;
       polling = true;
       try {
-        const [available, result] = await Promise.all([devtoolsService.scenarios(controller.signal), devtoolsService.status(controller.signal)]);
-        if (!controller.signal.aborted) { setScenarios(available); setStatus(result); setPollError(''); }
+        const [available, result] = await Promise.all([
+          devtoolsService.scenarios(controller.signal),
+          devtoolsService.status(controller.signal),
+        ]);
+        if (!controller.signal.aborted) {
+          setScenarios(available);
+          setStatus(result);
+          setPollError('');
+        }
+      } catch (e) {
+        if (!isCanceled(e) && !controller.signal.aborted)
+          setPollError(requestError(e));
+      } finally {
+        polling = false;
       }
-      catch (e) { if (!isCanceled(e) && !controller.signal.aborted) setPollError(requestError(e)); }
-      finally { polling = false; }
     };
     void poll();
-    const timer = window.setInterval(() => { void poll(); }, 1000);
-    return () => { mounted.current = false; controller.abort(); clearInterval(timer); };
+    const timer = window.setInterval(() => {
+      void poll();
+    }, 1000);
+    return () => {
+      mounted.current = false;
+      controller.abort();
+      clearInterval(timer);
+    };
   }, []);
-  const execute = useCallback(async (action: () => Promise<unknown>, success: string) => {
-    setBusy(true); setError(''); setMessage('');
-    try { await action(); const result = await devtoolsService.status(); if (mounted.current) { setStatus(result); setMessage(success); } }
-    catch (e) { if (mounted.current) setError(requestError(e)); }
-    finally { if (mounted.current) setBusy(false); }
-  }, []);
-  return { scenarios, status, error: error || pollError, busy, message, execute };
+  const execute = useCallback(
+    async (action: () => Promise<unknown>, success: string) => {
+      setBusy(true);
+      setError('');
+      setMessage('');
+      try {
+        await action();
+        const result = await devtoolsService.status();
+        if (mounted.current) {
+          setStatus(result);
+          setMessage(success);
+        }
+      } catch (e) {
+        if (mounted.current) setError(requestError(e));
+      } finally {
+        if (mounted.current) setBusy(false);
+      }
+    },
+    [],
+  );
+  return {
+    scenarios,
+    status,
+    error: error || pollError,
+    busy,
+    message,
+    execute,
+  };
 }

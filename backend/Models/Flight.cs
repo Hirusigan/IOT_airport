@@ -9,4 +9,6 @@ public class Flight
     public string Destination { get; set; } = "";
     public DateTimeOffset ScheduledDeparture { get; set; }
     public DateTimeOffset? ActualDeparture { get; set; }
+    public DateTimeOffset? ScheduledArrival { get; set; }
+    public DateTimeOffset? ActualArrival { get; set; }
 }

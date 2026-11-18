@@ -1,1 +1,5 @@
-export interface Scenario { id: string; name: string; description: string }
+export interface Scenario {
+  id: string;
+  name: string;
+  description: string;
+}

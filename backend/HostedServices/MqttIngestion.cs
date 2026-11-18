@@ -1,7 +1,7 @@
+using System.Text;
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Protocol;
-using System.Text;
 namespace Luggage;
 
 public class MqttIngestion(IServiceScopeFactory scopes, IConfiguration config, BrokerHealth health, ILogger<MqttIngestion> log) : BackgroundService

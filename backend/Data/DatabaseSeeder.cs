@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 namespace Luggage;
+
 public static class DatabaseSeeder
 {
     public static async Task SeedAsync(TrackingDbContext db)

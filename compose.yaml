@@ -16,10 +16,19 @@ services:
     image: eclipse-mosquitto:2.0.22
     restart: unless-stopped
     command: ["mosquitto", "-c", "/mosquitto/config/regional.conf"]
-    volumes: ["./docker/mosquitto/regional.conf:/mosquitto/config/regional.conf:ro", "./docker/mosquitto/regional.acl:/mosquitto/config/regional.acl:ro", "regional-data:/mosquitto/data"]
+    volumes:
+      [
+        "./docker/mosquitto/regional.conf:/mosquitto/config/regional.conf:ro",
+        "./docker/mosquitto/regional.acl:/mosquitto/config/regional.acl:ro",
+        "regional-data:/mosquitto/data",
+      ]
     networks: [airport-brokers]
     healthcheck:
-      test: ["CMD-SHELL", "mosquitto_sub -h localhost -t '$$SYS/broker/version' -C 1 -W 3 >/dev/null"]
+      test:
+        [
+          "CMD-SHELL",
+          "mosquitto_sub -h localhost -t '$$SYS/broker/version' -C 1 -W 3 >/dev/null",
+        ]
       interval: 5s
       timeout: 4s
       retries: 20
@@ -27,11 +36,20 @@ services:
     image: eclipse-mosquitto:2.0.22
     restart: unless-stopped
     command: ["mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
-    volumes: ["./docker/mosquitto/aar.conf:/mosquitto/config/mosquitto.conf:ro", "./docker/mosquitto/aar.acl:/mosquitto/config/airport.acl:ro", "aar-data:/mosquitto/data"]
+    volumes:
+      [
+        "./docker/mosquitto/aar.conf:/mosquitto/config/mosquitto.conf:ro",
+        "./docker/mosquitto/aar.acl:/mosquitto/config/airport.acl:ro",
+        "aar-data:/mosquitto/data",
+      ]
     networks: [airport-brokers]
     depends_on: [regional]
     healthcheck:
-      test: ["CMD-SHELL", "mosquitto_sub -h localhost -t '$$SYS/broker/version' -C 1 -W 3 >/dev/null"]
+      test:
+        [
+          "CMD-SHELL",
+          "mosquitto_sub -h localhost -t '$$SYS/broker/version' -C 1 -W 3 >/dev/null",
+        ]
       interval: 5s
       timeout: 4s
       retries: 20
@@ -39,17 +57,26 @@ services:
     image: eclipse-mosquitto:2.0.22
     restart: unless-stopped
     command: ["mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
-    volumes: ["./docker/mosquitto/cph.conf:/mosquitto/config/mosquitto.conf:ro", "./docker/mosquitto/cph.acl:/mosquitto/config/airport.acl:ro", "cph-data:/mosquitto/data"]
+    volumes:
+      [
+        "./docker/mosquitto/cph.conf:/mosquitto/config/mosquitto.conf:ro",
+        "./docker/mosquitto/cph.acl:/mosquitto/config/airport.acl:ro",
+        "cph-data:/mosquitto/data",
+      ]
     networks: [airport-brokers]
     depends_on: [regional]
     healthcheck:
-      test: ["CMD-SHELL", "mosquitto_sub -h localhost -t '$$SYS/broker/version' -C 1 -W 3 >/dev/null"]
+      test:
+        [
+          "CMD-SHELL",
+          "mosquitto_sub -h localhost -t '$$SYS/broker/version' -C 1 -W 3 >/dev/null",
+        ]
       interval: 5s
       timeout: 4s
       retries: 20
   backend:
     image: andreasfrost1004/luggagetracker-backend:latest
-    build: {context: ., dockerfile: backend/Dockerfile}
+    build: { context: ., dockerfile: backend/Dockerfile }
     restart: unless-stopped
     environment:
       ConnectionStrings__Database: Host=postgres;Database=luggage;Username=luggage;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
@@ -61,14 +88,19 @@ services:
       AirportSimulation__Url: http://airport-simulation:8080
       Brokers__ConfigPath: /broker-config
       Docker__Endpoint: unix:///var/run/docker.sock
-    volumes: ["airport-broker-config:/broker-config", "simulation-runs:/runs", "/var/run/docker.sock:/var/run/docker.sock"]
+    volumes:
+      [
+        "airport-broker-config:/broker-config",
+        "simulation-runs:/runs",
+        "/var/run/docker.sock:/var/run/docker.sock",
+      ]
     networks: [default, airport-brokers]
     depends_on:
-      postgres: {condition: service_healthy}
-      regional: {condition: service_healthy}
-      aar: {condition: service_healthy}
-      cph: {condition: service_healthy}
-      airport-simulation: {condition: service_started}
+      postgres: { condition: service_healthy }
+      regional: { condition: service_healthy }
+      aar: { condition: service_healthy }
+      cph: { condition: service_healthy }
+      airport-simulation: { condition: service_started }
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     healthcheck:
@@ -78,11 +110,11 @@ services:
       retries: 20
   airport-simulation:
     image: andreasfrost1004/luggagetracker-airport-simulation:latest
-    build: {context: ., dockerfile: airport-simulation/Dockerfile}
+    build: { context: ., dockerfile: airport-simulation/Dockerfile }
     restart: unless-stopped
     environment:
       BackendUrl: http://backend:8080
-      DeviceSimulatorUrl: http://iot-device-simulator:8080/publish
+      DeviceSimulatorUrl: http://iot-device-simulator:8080/devices/actions
       ScenariosDirectory: /app/scenarios
     volumes: ["simulation-runs:/runs"]
     networks: [default, airport-brokers]
@@ -90,7 +122,7 @@ services:
       com.centurylinklabs.watchtower.enable: "true"
   iot-device-simulator:
     image: andreasfrost1004/luggagetracker-iot-device-simulator:latest
-    build: {context: ., dockerfile: iot-device-simulator/Dockerfile}
+    build: { context: ., dockerfile: iot-device-simulator/Dockerfile }
     restart: unless-stopped
     networks: [default, airport-brokers]
     labels:
@@ -101,7 +133,7 @@ services:
     restart: unless-stopped
     networks: [default, ingress]
     depends_on:
-      backend: {condition: service_healthy}
+      backend: { condition: service_healthy }
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     healthcheck:

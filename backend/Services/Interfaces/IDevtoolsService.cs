@@ -1,7 +1,8 @@
 namespace Luggage;
+
 public interface IDevtoolsService
 {
-    IReadOnlyList<ScenarioDTO> Scenarios { get; }
+    Task<IReadOnlyList<ScenarioDTO>> GetScenarios();
     SimulationStatusDTO Status { get; }
     Task Start(string id);
     Task Stop();

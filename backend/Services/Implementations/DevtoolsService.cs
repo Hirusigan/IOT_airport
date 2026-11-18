@@ -1,9 +1,10 @@
 namespace Luggage;
+
 public class DevtoolsService(ISimulationRunner runner, IDevtoolsRepository repository,
     TrackingDbContext db,
     DevtoolsGate operations, ProcessingGate processing, IDashboardNotifier notifications) : IDevtoolsService
 {
-    public IReadOnlyList<ScenarioDTO> Scenarios => runner.Scenarios;
+    public Task<IReadOnlyList<ScenarioDTO>> GetScenarios() => runner.GetScenarios();
     public SimulationStatusDTO Status => runner.Status;
     public async Task Start(string id)
     {

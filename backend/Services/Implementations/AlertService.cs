@@ -1,4 +1,5 @@
 namespace Luggage;
+
 public class AlertService(IAlertRepository alerts) : IAlertService
 {
     public async Task<IReadOnlyList<AlertDTO>> Get(string? airportId, bool? active, string? severity)

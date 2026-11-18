@@ -1,4 +1,5 @@
 namespace Luggage;
+
 public interface IFlightRepository : IRepository<Flight>
 {
     Task<Flight?> GetAsync(string id);

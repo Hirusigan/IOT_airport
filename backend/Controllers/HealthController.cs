@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 namespace Luggage;
+
 [ApiController, Route("health")]
 public class HealthController(IHealthService health) : ControllerBase
 {

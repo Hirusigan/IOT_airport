@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 namespace Luggage;
+
 public class StatisticsRepository(TrackingDbContext db) : IStatisticsRepository
 {
     public async Task<StatisticsDTO> GetAsync() => new(await db.Airports.CountAsync(), await db.Flights.CountAsync(),

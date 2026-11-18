@@ -19,8 +19,8 @@ public class EventValidationService(IAirportRepository airports, IDeviceReposito
         {
             if (parts[2] != "scanner") throw new ArgumentException("Luggage requires a scanner");
             var b = JsonContract.Data<BagData>(e.Data);
-            if (b.Sequence <= 0 || b.Stage is not ("checkin" or "security" or "sorted" or "loaded" or "arrived"))
-                throw new ArgumentException("Invalid sequence or stage");
+            if (b.Sequence <= 0 || b.LegOrder < 1 || b.Stage is not ("checkin" or "security" or "sorted" or "loaded" or "arrived"))
+                throw new ArgumentException("Invalid sequence, leg order or stage");
             var journey = await journeys.GetAsync(b.JourneyId);
             if (journey == null)
             {

@@ -14,9 +14,18 @@ public class EventProcessingService(IEventRepository events, IAssignmentReposito
             if (await events.ExistsAsync(e.EventId)) return false;
             await using var tx = await work.BeginTransactionAsync();
             var now = clock.GetUtcNow();
-            var row = new Observation { EventId = e.EventId, RunId = e.SimulationRunId, AirportId = e.AirportId,
-                DeviceId = e.DeviceId, EventType = e.EventType, SchemaVersion = e.SchemaVersion,
-                OccurredAt = e.OccurredAt, ReceivedAt = now, Payload = raw };
+            var row = new Observation
+            {
+                EventId = e.EventId,
+                RunId = e.SimulationRunId,
+                AirportId = e.AirportId,
+                DeviceId = e.DeviceId,
+                EventType = e.EventType,
+                SchemaVersion = e.SchemaVersion,
+                OccurredAt = e.OccurredAt,
+                ReceivedAt = now,
+                Payload = raw
+            };
             if (e.EventType == "luggage")
             {
                 var b = JsonContract.Data<BagData>(e.Data);
@@ -24,16 +33,22 @@ public class EventProcessingService(IEventRepository events, IAssignmentReposito
                 if (journey == null)
                 {
                     var flightId = b.FlightId ?? throw new ArgumentException("A first check-in must identify its planned flight");
-                    var flight = await flights.GetAsync(flightId) ?? throw new ArgumentException("Missing flight");
+                    var plannedFlight = await flights.GetAsync(flightId) ?? throw new ArgumentException("Missing flight");
                     var tripId = b.TripId ?? b.JourneyId;
                     var trip = await trips.GetAsync(tripId);
                     if (trip != null && (trip.RunId != e.SimulationRunId || trip.LuggageId != b.LuggageId))
                         throw new ArgumentException("Trip identity conflicts with luggage/run");
                     if (trip == null) trips.Add(new Trip { Id = tripId, RunId = e.SimulationRunId, LuggageId = b.LuggageId });
-                    journey = new Journey { Id = b.JourneyId, RunId = e.SimulationRunId, LuggageId = b.LuggageId,
-                        TripId = tripId, LegOrder = b.LegOrder };
+                    journey = new Journey
+                    {
+                        Id = b.JourneyId,
+                        RunId = e.SimulationRunId,
+                        LuggageId = b.LuggageId,
+                        TripId = tripId,
+                        LegOrder = b.LegOrder
+                    };
                     journeys.Add(journey);
-                    assignments.Add(new Assignment { JourneyId = journey.Id, FlightId = flight.Id });
+                    assignments.Add(new Assignment { JourneyId = journey.Id, FlightId = plannedFlight.Id });
                     await work.SaveChangesAsync();
                 }
                 journeyId = row.JourneyId = b.JourneyId;

@@ -1,4 +1,5 @@
 namespace Luggage;
+
 public static class RuleDecisions
 {
     public static bool Loaded(Assignment a, Flight f) => a.LoadedAt is { } loaded && loaded <= (f.ActualDeparture ?? f.ScheduledDeparture);

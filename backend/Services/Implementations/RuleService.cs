@@ -1,12 +1,20 @@
 namespace Luggage;
+
 public class RuleService(IAlertRepository alerts, IFlightRepository flights, IAssignmentRepository assignments, RuleSettings settings) : IRuleService
 {
     public async Task Set(AlertType type, Assignment assignment, string airport, AlertSeverity severity, bool active, DateTimeOffset now)
     {
         var alert = await alerts.GetAsync(type, assignment.JourneyId, assignment.FlightId);
         if (alert == null && active)
-            alerts.Add(new Alert { Rule = type, JourneyId = assignment.JourneyId, FlightId = assignment.FlightId,
-                AirportId = airport, Severity = severity, CreatedAt = now });
+            alerts.Add(new Alert
+            {
+                Rule = type,
+                JourneyId = assignment.JourneyId,
+                FlightId = assignment.FlightId,
+                AirportId = airport,
+                Severity = severity,
+                CreatedAt = now
+            });
         else if (alert != null && alert.Active != active)
         {
             alert.Active = active;

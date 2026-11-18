@@ -16,7 +16,7 @@ Keep `.env` and the `postgres-data`, `airport-broker-config`, and other named vo
 
 ## Simulation and event flow
 
-In **Devtools**, choose a scenario and start it. The backend preserves the existing start, stop, and status endpoints and forwards control to Airport Simulation. Airport Simulation registers the run's flight schedule with the backend before starting its event clock and sends actual departure times directly to the backend over HTTP. A first luggage `checkin` event includes the planned flight ID; the backend creates the trip, journey, and flight assignment when it processes that event. Later scanner and gate events update that data through MQTT. No run manifest or run-registration request is used.
+In **Devtools**, choose a scenario and start it. The backend preserves the existing start, stop, and status endpoints and forwards control to Airport Simulation. Airport Simulation registers flight schedules, including scheduled arrival times, and sends actual departure and arrival times directly to the backend over HTTP. A first luggage `checkin` event includes the planned flight ID; the backend creates the trip, journey, and flight assignment when it processes that event. Luggage arrival remains a scanner event over MQTT. No run manifest or run-registration request is used.
 
 Airport Simulation sends each device event to the IoT Device Simulator over the private Compose network. The device simulator publishes anonymously to the local airport broker. The airport broker ACL permits that airport's `airport/<CODE>/#` topics, and its bridge sends those topics to the regional broker. The backend subscribes to `airport/#` there.
 
@@ -39,23 +39,25 @@ Watchtower runs from your separate Compose file. Only the backend, frontend, and
 
 ## API
 
-| Endpoint | Purpose |
-| --- | --- |
-| GET /api/airports | Airport metadata and status |
-| POST /api/airports | Register metadata and provision an airport broker |
-| POST /api/airports/schedule | Register a scenario's flight schedule and devices |
-| GET /api/airports/{id} | Flights and alert history |
-| GET /api/luggage/{id} | Luggage states and observations |
-| GET /api/alerts | Alerts and filters |
-| GET /api/statistics | Persisted counts |
-| GET /api/devtools/scenarios | Available scenarios |
-| GET /api/devtools/simulation | Current/last simulation status |
-| POST /api/devtools/simulation | Start a scenario |
-| POST /api/devtools/simulation/stop | Stop the active scenario |
-| POST /api/devtools/database/clear | Clear application data |
-| POST /api/devtools/database/seed | Add default airport/device records |
-| GET /health | Database/MQTT readiness |
-| /hub | SignalR refresh notifications |
+| Endpoint                           | Purpose                                           |
+| ---------------------------------- | ------------------------------------------------- |
+| GET /api/airports                  | Airport metadata and status                       |
+| POST /api/airports                 | Register metadata and provision an airport broker |
+| POST /api/airports/schedule        | Register a scenario's flight schedule and devices |
+| POST /api/airports/flights/{flightId}/departure | Record actual flight departure |
+| POST /api/airports/flights/{flightId}/arrival | Record actual flight arrival |
+| GET /api/airports/{id}             | Flights and alert history                         |
+| GET /api/luggage/{id}              | Luggage states and observations                   |
+| GET /api/alerts                    | Alerts and filters                                |
+| GET /api/statistics                | Persisted counts                                  |
+| GET /api/devtools/scenarios        | Available scenarios                               |
+| GET /api/devtools/simulation       | Current/last simulation status                    |
+| POST /api/devtools/simulation      | Start a scenario                                  |
+| POST /api/devtools/simulation/stop | Stop the active scenario                          |
+| POST /api/devtools/database/clear  | Clear application data                            |
+| POST /api/devtools/database/seed   | Add default airport/device records                |
+| GET /health                        | Database/MQTT readiness                           |
+| /hub                               | SignalR refresh notifications                     |
 
 ## Development notes
 
