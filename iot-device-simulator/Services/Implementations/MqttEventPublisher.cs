@@ -1,3 +1,7 @@
+using MQTTnet;
+using MQTTnet.Client;
+using MQTTnet.Protocol;
+
 namespace IotDeviceSimulator;
 
 public sealed class MqttEventPublisher : IMqttEventPublisher
