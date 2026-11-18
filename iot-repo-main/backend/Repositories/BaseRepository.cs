@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 namespace Luggage;
 
-public abstract class BaseRepository<T>(Store db) : IRepository<T> where T : class
+public abstract class BaseRepository<T>(TrackingDbContext db) : IRepository<T> where T : class
 {
     protected DbSet<T> Set => db.Set<T>();
     public void Add(T entity) => Set.Add(entity);

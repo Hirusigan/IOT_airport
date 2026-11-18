@@ -1,21 +1,22 @@
+using Microsoft.EntityFrameworkCore;
 namespace Luggage;
-public class DatabaseSeeder(IAirportRepository airports, IDeviceRepository devices, IUnitOfWork work) : IDatabaseSeeder
+public static class DatabaseSeeder
 {
-    public async Task SeedAsync()
+    public static async Task SeedAsync(TrackingDbContext db)
     {
         var defaults = new[] {
             new Airport { Id = "AAR", Name = "Aarhus Airport", Latitude = 56.300, Longitude = 10.619 },
             new Airport { Id = "CPH", Name = "Copenhagen Airport", Latitude = 55.618, Longitude = 12.656 }
         };
         foreach (var airport in defaults)
-            if (await airports.GetAsync(airport.Id) == null) airports.Add(airport);
+            if (!await db.Airports.AnyAsync(x => x.Id == airport.Id)) db.Airports.Add(airport);
         foreach (var id in new[] { "AAR", "CPH" })
         {
-            if (await devices.GetAsync(id, "scanner-001") == null)
-                devices.Add(new Device { Id = "scanner-001", AirportId = id, Type = "scanner" });
-            if (await devices.GetAsync(id, "gate-01") == null)
-                devices.Add(new Device { Id = "gate-01", AirportId = id, Type = "gate" });
+            if (!await db.Devices.AnyAsync(x => x.AirportId == id && x.Id == "scanner-001"))
+                db.Devices.Add(new Device { Id = "scanner-001", AirportId = id, Type = "scanner" });
+            if (!await db.Devices.AnyAsync(x => x.AirportId == id && x.Id == "gate-01"))
+                db.Devices.Add(new Device { Id = "gate-01", AirportId = id, Type = "gate" });
         }
-        await work.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 }

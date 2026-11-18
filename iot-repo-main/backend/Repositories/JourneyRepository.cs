@@ -1,5 +1,5 @@
 namespace Luggage;
-public class JourneyRepository(Store db) : BaseRepository<Journey>(db), IJourneyRepository
+public class JourneyRepository(TrackingDbContext db) : BaseRepository<Journey>(db), IJourneyRepository
 {
     public Task<Journey?> GetAsync(string id) => FindAsync(id);
     public async Task<Journey?> GetPreviousLegAsync(string tripId, int legOrder) =>

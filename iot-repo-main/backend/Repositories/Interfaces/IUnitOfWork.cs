@@ -10,4 +10,3 @@ public interface IUnitOfWork
     Task SaveChangesAsync();
     bool HasChanges { get; }
 }
-public class PersistenceConflictException(string message, Exception inner) : Exception(message, inner);

@@ -1,5 +1,6 @@
 namespace Luggage;
-public class DevtoolsService(ISimulationRunner runner, IDevtoolsRepository repository, IDatabaseSeeder seeder,
+public class DevtoolsService(ISimulationRunner runner, IDevtoolsRepository repository,
+    TrackingDbContext db,
     DevtoolsGate operations, ProcessingGate processing, IDashboardNotifier notifications) : IDevtoolsService
 {
     public IReadOnlyList<ScenarioDTO> Scenarios => runner.Scenarios;
@@ -32,7 +33,7 @@ public class DevtoolsService(ISimulationRunner runner, IDevtoolsRepository repos
         try
         {
             await processing.Mutex.WaitAsync();
-            try { await seeder.SeedAsync(); } finally { processing.Mutex.Release(); }
+            try { await DatabaseSeeder.SeedAsync(db); } finally { processing.Mutex.Release(); }
         }
         finally { operations.Mutex.Release(); }
         await notifications.Send();

@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Backend.Migrations
 {
-    [DbContext(typeof(Store))]
-    partial class StoreModelSnapshot : ModelSnapshot
+    [DbContext(typeof(TrackingDbContext))]
+    partial class TrackingDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {

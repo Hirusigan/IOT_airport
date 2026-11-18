@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 namespace Luggage;
 
-public class UnitOfWork(Store db) : IUnitOfWork
+public class UnitOfWork(TrackingDbContext db) : IUnitOfWork
 {
     public bool HasChanges => db.ChangeTracker.HasChanges();
     public async Task<ITransaction> BeginTransactionAsync() => new Transaction(await db.Database.BeginTransactionAsync());

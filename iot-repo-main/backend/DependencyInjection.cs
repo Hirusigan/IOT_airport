@@ -5,7 +5,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddLuggageBackend(this IServiceCollection services, IConfiguration config)
     {
-        services.AddDbContext<Store>(options => options.UseNpgsql(config.GetConnectionString("Database")
+        services.AddDbContext<TrackingDbContext>(options => options.UseNpgsql(config.GetConnectionString("Database")
             ?? throw new InvalidOperationException("ConnectionStrings__Database is required")));
         services.AddSingleton<ProcessingGate>();
         services.AddSingleton<DevtoolsGate>();
@@ -43,8 +43,6 @@ public static class DependencyInjection
         services.AddScoped<IDeadlineService, DeadlineService>();
         services.AddScoped<IDiagnosticService, DiagnosticService>();
         services.AddTransient<IDashboardNotifier, SignalRDashboardNotifier>();
-        services.AddScoped<DatabaseSeeder>();
-        services.AddScoped<IDatabaseSeeder>(sp => sp.GetRequiredService<DatabaseSeeder>());
         services.AddScoped<DatabaseInitializer>();
         services.AddControllers();
         services.AddSignalR();

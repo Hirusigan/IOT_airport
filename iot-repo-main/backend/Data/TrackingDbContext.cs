@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Luggage;
 
-public class Store(DbContextOptions<Store> options) : DbContext(options)
+public class TrackingDbContext(DbContextOptions<TrackingDbContext> options) : DbContext(options)
 {
     public DbSet<Airport> Airports => Set<Airport>();
     public DbSet<Device> Devices => Set<Device>();

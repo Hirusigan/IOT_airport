@@ -1,2 +1,2 @@
 namespace Luggage;
-public class DiagnosticRepository(Store db) : BaseRepository<Diagnostic>(db), IDiagnosticRepository;
+public class DiagnosticRepository(TrackingDbContext db) : BaseRepository<Diagnostic>(db), IDiagnosticRepository;

@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Backend.Migrations
 {
-    [DbContext(typeof(Store))]
+    [DbContext(typeof(TrackingDbContext))]
     [Migration("20261007125058_AddTrips")]
     partial class AddTrips
     {

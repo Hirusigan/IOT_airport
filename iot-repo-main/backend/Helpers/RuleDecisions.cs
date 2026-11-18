@@ -9,4 +9,3 @@ public static class RuleDecisions
     public static bool Unexpected(string airport, string stage, DateTimeOffset at, Flight flight) =>
         stage == "arrived" ? airport != flight.Destination || at < (flight.ActualDeparture ?? flight.ScheduledDeparture) : airport != flight.Origin;
 }
-

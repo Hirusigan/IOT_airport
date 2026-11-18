@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 namespace Luggage;
-public class DatabaseInitializer(Store db, DatabaseSeeder seeder)
+public class DatabaseInitializer(TrackingDbContext db)
 {
     public async Task InitializeAsync()
     {
         await db.Database.MigrateAsync();
-        await seeder.SeedAsync();
+        await DatabaseSeeder.SeedAsync(db);
     }
 }

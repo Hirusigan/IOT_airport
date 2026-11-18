@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 namespace Luggage;
-public class FlightRepository(Store db) : BaseRepository<Flight>(db), IFlightRepository
+public class FlightRepository(TrackingDbContext db) : BaseRepository<Flight>(db), IFlightRepository
 {
     public Task<Flight?> GetAsync(string id) => FindAsync(id);
     public Task<bool> ExistsInRunAsync(string id, string runId) => ExistsAsync(x => x.Id == id && x.RunId == runId);
