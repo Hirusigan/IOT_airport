@@ -10,3 +10,23 @@
 .tools/
 run.json
 *.user
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Compiled files
+*.o
+*.obj
+*.exe
+*.out
+*.so
+*.dll
+*.dylib
+*.a
+
+# IDE and OS files
+.idea/
+.DS_Store
+Thumbs.db
