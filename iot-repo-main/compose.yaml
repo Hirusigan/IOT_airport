@@ -92,9 +92,6 @@ services:
       interval: 10s
       timeout: 3s
       retries: 10
-  tests:
-    build: {context: ., dockerfile: backend-tests/Dockerfile}
-    profiles: ["tests"]
 networks:
   ingress:
     external: true

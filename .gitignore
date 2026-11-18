@@ -1,0 +1,12 @@
+.env
+.vscode/
+.secrets/
+**/bin/
+**/obj/
+**/build/
+**/node_modules/
+**/dist/
+**/TestResults/
+.tools/
+run.json
+*.user

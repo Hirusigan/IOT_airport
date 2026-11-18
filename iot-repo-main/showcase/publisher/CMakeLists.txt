@@ -1,8 +1,0 @@
-cmake_minimum_required(VERSION 3.20)
-project(showcase_publisher LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-find_package(nlohmann_json REQUIRED)
-find_package(Threads REQUIRED)
-add_executable(publisher main.cpp)
-target_link_libraries(publisher PRIVATE mosquitto nlohmann_json::nlohmann_json Threads::Threads)

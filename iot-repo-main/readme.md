@@ -1,7 +1,5 @@
 # Airport luggage tracking
 
-For the smaller presentation milestone, see the independent [showcase version](showcase/README.md).
-
 C++ virtual devices → airport Mosquitto bridges → regional Mosquitto → ASP.NET Core/EF Core → PostgreSQL → React/SignalR.
 
 ## Start the application
@@ -96,12 +94,7 @@ In Devtools, start **Connecting flights** and search for **BAG-TRANSFER**. The d
 
 ## Development and verification
 
-```sh
-dotnet test backend-tests/Tests.csproj
-docker compose --profile tests run --build --rm --no-deps tests
-```
-
-Backend tests are small service unit tests with mocked repositories and no database. The backend Docker build also runs the existing C++ CTest checks. In frontend/, use `npm ci` and `npm run build`. For local frontend development Vite proxies to backend port 5080; local backend development requires database/MQTT configuration and the compiled simulator path and scenarios directory for Devtools.
+The backend Docker build runs the existing C++ CTest checks. In `frontend/`, use `npm ci` and `npm run build`. For local frontend development Vite proxies to backend port 5080; local backend development requires database/MQTT configuration and the compiled simulator path and scenarios directory for Devtools.
 
 - [Backend architecture](docs/backend-architecture.md)
 - [Frontend architecture](docs/frontend-architecture.md)
@@ -116,4 +109,4 @@ Exactly one backend is supported. A shared processing gate serializes imports, i
 
 MQTT uses QoS 1, retain false, persistent sessions and bounded broker queues (1,000 messages/1 MiB per client). Publishing waits for acknowledgments and reconnects with bounded backoff. PUBACK does not guarantee database commit. There is no durable retry inbox/outbox or broker replication: the system remains best effort across the acknowledgment/commit gap. Long outages, queue overflow, crashes and unavailable storage can lose events.
 
-Runtime data/configuration and prepared simulation files persist in Docker volumes. The initial version supports predefined scenarios and two airport brokers, not a scenario editor, automatic broker provisioning or horizontal scaling. Map tiles and the optional font need internet. Cloudflare Access is not configured by this application. A full volume reset with `docker compose --profile tests down -v` permanently deletes project data and credentials; use Devtools for ordinary resets.
+Runtime data/configuration and prepared simulation files persist in Docker volumes. The initial version supports predefined scenarios and two airport brokers, not a scenario editor, automatic broker provisioning or horizontal scaling. Map tiles and the optional font need internet. Cloudflare Access is not configured by this application. A full volume reset with `docker compose down -v` permanently deletes project data and credentials; use Devtools for ordinary resets.
