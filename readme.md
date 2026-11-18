@@ -1,112 +1,68 @@
 # Airport luggage tracking
 
-C++ virtual devices → airport Mosquitto bridges → regional Mosquitto → ASP.NET Core/EF Core → PostgreSQL → React/SignalR.
+Airport Simulation (ASP.NET Core) sends flight schedules to the backend. IoT Device Simulator publishes scanner and gate events to each airport's Mosquitto broker. Airport brokers bridge `airport/<CODE>/#` to the regional broker, and the backend consumes `airport/#` from the regional broker. PostgreSQL and the backend own application data; React and SignalR display it.
 
-## Start the application
+## Start the server
 
-Install Docker Engine with Compose v2 on your Pi 5 running 64-bit Ubuntu Server. From the repository root:
-
-```sh
-docker compose up --build -d
-```
-
-No setup scripts, host SDKs or initial .env file are required. The bootstrap container generates credentials and broker configuration into the persistent `runtime-config` volume. Compose waits for it, starts the database/brokers, applies migrations, seeds missing AAR/CPH airports and devices, and starts the dashboard. Subsequent starts reuse credentials and data.
-
-Open your configured tunnel hostname. Compose publishes no frontend host port; cloudflared reaches the frontend on the external `ingress` network.
-
-If your existing cloudflared container runs on the same Docker network, point the tunnel to `http://frontend:80`; otherwise use your existing host routing. Cloudflare Access setup remains a separate deployment step. Devtools and the existing import/registration APIs have no application login, so protect the hostname before exposing it publicly. Database and MQTT ports stay internal.
-
-**Upgrade from the script-based version:** keep your existing .env for the first startup. Bootstrap uses those credentials so the existing PostgreSQL volume remains accessible. Once generated, runtime configuration is authoritative. Do not delete `runtime-config` while retaining database/broker volumes, or fresh credentials may no longer match the stored database.
+Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`. Ensure the external `ingress` network used by your Cloudflare tunnel exists, then start the stack:
 
 ```sh
-docker compose stop      # stop and preserve data/configuration
-docker compose up -d     # resume
-docker compose logs -f backend aar cph regional
-docker compose down      # remove containers, preserve volumes
+docker compose up -d --build
 ```
 
-## Docker Hub deployment
+Compose runs PostgreSQL, the default `regional`, `aar`, and `cph` brokers, backend, frontend, Airport Simulation, and IoT Device Simulator. It does not publish broker or frontend ports to the host. Cloudflare/tunnel routing remains your existing deployment setup; route to `http://frontend:80` on `ingress`. Cloudflare Access is unchanged.
 
-The frontend joins the existing external Docker network `ingress`. Your cloudflared container must also be connected to it, with the application Service URL set to `http://frontend:80`. That network must exist before starting Compose, including when building locally.
+Keep `.env` and the `postgres-data`, `airport-broker-config`, and other named volumes when upgrading. For an existing database volume, set `POSTGRES_PASSWORD` to the password already configured for that database before starting the new stack. PostgreSQL credentials come from `.env`; broker access is anonymous and topic-limited by ACLs. The Docker socket is mounted into the backend so it can create Mosquitto containers for additional airports.
 
-To publish the bootstrap, backend and frontend images for both PCs (AMD64) and the Pi (ARM64), run on your development machine:
+## Simulation and event flow
 
-```sh
-docker login --username andreasfrost1004
-docker buildx bake --push
-```
+In **Devtools**, choose a scenario and start it. The backend preserves the existing start, stop, and status endpoints and forwards control to Airport Simulation. Airport Simulation registers the run's flight schedule with the backend before starting its event clock and sends actual departure times directly to the backend over HTTP. A first luggage `checkin` event includes the planned flight ID; the backend creates the trip, journey, and flight assignment when it processes that event. Later scanner and gate events update that data through MQTT. No run manifest or run-registration request is used.
 
-After the images are published, use the repository's Compose file on the Pi:
+Airport Simulation sends each device event to the IoT Device Simulator over the private Compose network. The device simulator publishes anonymously to the local airport broker. The airport broker ACL permits that airport's `airport/<CODE>/#` topics, and its bridge sends those topics to the regional broker. The backend subscribes to `airport/#` there.
+
+Airport records AAR and CPH and their default scanner/gate devices are seeded at startup. Use **Airports** to register more airport metadata; the backend writes broker config into the shared `airport-broker-config` volume and starts a Mosquitto container on the private `airport-brokers` network. Each airport broker initiates its bridge to `regional`. Broker ACLs restrict topics, but anonymous ACLs do not authenticate the broker's claimed client ID.
+
+Simulation status includes starting/running/completed/stopped/failed and event progress. Stop cancels future events; already published events remain stored. Backend status is persisted in `simulation-runs`.
+
+## Build and publish images
+
+Pushes to `main` validate all four Docker images. To publish, manually run **Build and publish** from `main` and enable the Docker Hub publish option. The workflow publishes `latest` and the commit SHA tags for backend, frontend, Airport Simulation, and IoT Device Simulator, then triggers Watchtower for the corresponding application container. Configure repository secrets `DOCKER_ACCESS_TOKEN`, `WATCHTOWER_TOKEN`, and `WATCHTOWER_URL`; Docker Hub username is `andreasfrost1004`.
+
+On the server, update the stack with:
 
 ```sh
 docker compose pull
-docker compose up --no-build -d
+docker compose up -d
 ```
 
-Repeat those two commands to deploy updated images. Data stays in the existing volumes. Images use the `latest` tag; keep the Pi's Compose file updated when service configuration changes.
-
-## Devtools
-
-Open **Devtools** in the sidebar. Choose All scenarios, Normal journey, Missed flight, Wrong flight, or Unexpected airport and click **Start simulation**. Only one simulation runs at a time. Status shows starting/running/completed/stopped/failed/interrupted and the number of published events.
-
-The backend prepares a fresh run, imports its manifest through the import service, and launches the existing C++ publisher. Messages still travel through the local airport brokers and regional bridge. The run starts 15 seconds after preparation and the full scenario lasts about 90 seconds. Completion means MQTT publishing finished; ingestion and dashboard refresh may follow shortly afterward.
-
-**Stop simulation** cancels future publishing and retains already imported data. Imported flights and assignments remain, so deadline rules can still create alerts for a stopped run. A backend restart marks an unfinished run Interrupted rather than silently restarting it.
-
-**Clear database** asks for confirmation, stops an active simulation, and deletes airports, devices, flights, journeys, observations, states, alerts and diagnostics. The schema and migrations remain. Internal cleared-run IDs survive so queued old messages are ignored, including after restarts. Existing prepared files/status remain in the simulation volume; cleared manifests cannot be reimported.
-
-**Seed defaults** adds missing AAR/CPH airports and scanner/gate devices without removing history or changing existing metadata. It is safe to repeat. Clearing and seeding are separate actions. Startup also seeds missing defaults, so restarting after a clear restores those registrations.
-
-| Bag in All scenarios | Expected behavior |
-| --- | --- |
-| BAG-001 | Correct loading and arrival; no active handling alert |
-| BAG-002 | Orange warning, then red missed-flight alert |
-| BAG-003 | Wrong-flight alert, then missed planned flight |
-| BAG-004 | Unexpected-airport alert, then missed flight |
-
-The backend owns alert decisions. Rules thresholds are configured in Compose. Business status is the highest active alert severity; telemetry status independently describes freshness and MQTT connectivity.
-
-## Trip map
-
-Search for a bag on the Luggage page to see its airports, numbered flight legs and event-driven suitcase movement. A trip selector keeps separate runs apart. Airport markers show airport and flight information. Routes and flight/transfer positions are schematic illustrations, not live tracking.
-
-In Devtools, start **Connecting flights** and search for **BAG-TRANSFER**. The demo travels AAR → CPH → AAR, transferring at Copenhagen, and lasts about 105 seconds including preparation. Existing single-flight runs remain available as individual trips. Startup migrates existing journeys into single-leg trips without removing history.
+Watchtower runs from your separate Compose file. Only the backend, frontend, and two simulation applications carry its enable label; brokers do not.
 
 ## API
 
 | Endpoint | Purpose |
 | --- | --- |
 | GET /api/airports | Airport metadata and status |
-| POST /api/airports | Register airport metadata |
+| POST /api/airports | Register metadata and provision an airport broker |
+| POST /api/airports/schedule | Register a scenario's flight schedule and devices |
 | GET /api/airports/{id} | Flights and alert history |
-| GET /api/luggage/{id} | Luggage states and observations across runs |
-| GET /api/alerts | Alerts; optional airportId, active and severity filters |
+| GET /api/luggage/{id} | Luggage states and observations |
+| GET /api/alerts | Alerts and filters |
 | GET /api/statistics | Persisted counts |
-| POST /api/runs/import | Import a prepared manifest |
 | GET /api/devtools/scenarios | Available scenarios |
 | GET /api/devtools/simulation | Current/last simulation status |
-| POST /api/devtools/simulation | Start with a scenarioId |
-| POST /api/devtools/simulation/stop | Stop and await publisher exit |
+| POST /api/devtools/simulation | Start a scenario |
+| POST /api/devtools/simulation/stop | Stop the active scenario |
 | POST /api/devtools/database/clear | Clear application data |
-| POST /api/devtools/database/seed | Add missing default registrations |
+| POST /api/devtools/database/seed | Add default airport/device records |
 | GET /health | Database/MQTT readiness |
 | /hub | SignalR refresh notifications |
 
-## Development and verification
+## Development notes
 
-The backend Docker build runs the existing C++ CTest checks. In `frontend/`, use `npm ci` and `npm run build`. For local frontend development Vite proxies to backend port 5080; local backend development requires database/MQTT configuration and the compiled simulator path and scenarios directory for Devtools.
+The backend uses .NET 10, PostgreSQL, MQTTnet, and Docker.DotNet. The Airport Simulation and IoT Device Simulator are separate .NET 10 ASP.NET Core applications. Scenario definitions remain in `simulation/scenarios`; the old C++ publisher and Docker Bake setup are removed from the runtime/build workflow.
 
 - [Backend architecture](docs/backend-architecture.md)
 - [Frontend architecture](docs/frontend-architecture.md)
 - [Devtools and Docker deployment](docs/devtools.md)
 - [MQTT contract](docs/contract.md)
-- [Verification](docs/verification.md)
-- [Historical proposal](docs/original-proposal.md)
-
-## Reliability and scope
-
-Exactly one backend is supported. A shared processing gate serializes imports, ingestion, registration, rules, seeding and resets. Database keys enforce event/alert uniqueness. A separate Devtools gate serializes simulation and maintenance operations.
-
-MQTT uses QoS 1, retain false, persistent sessions and bounded broker queues (1,000 messages/1 MiB per client). Publishing waits for acknowledgments and reconnects with bounded backoff. PUBACK does not guarantee database commit. There is no durable retry inbox/outbox or broker replication: the system remains best effort across the acknowledgment/commit gap. Long outages, queue overflow, crashes and unavailable storage can lose events.
-
-Runtime data/configuration and prepared simulation files persist in Docker volumes. The initial version supports predefined scenarios and two airport brokers, not a scenario editor, automatic broker provisioning or horizontal scaling. Map tiles and the optional font need internet. Cloudflare Access is not configured by this application. A full volume reset with `docker compose down -v` permanently deletes project data and credentials; use Devtools for ordinary resets.
+- [Verification notes](docs/verification.md)

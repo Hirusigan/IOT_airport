@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useDashboard } from '../context/DashboardProvider';
-const navigation = [{ path: '/', title: 'Overview' }, { path: '/luggage', title: 'Luggage' }, { path: '/alerts', title: 'Alerts' }, { path: '/statistics', title: 'Statistics' }, { path: '/devtools', title: 'Devtools' }];
+const navigation = [{ path: '/', title: 'Overview' }, { path: '/luggage', title: 'Luggage' }, { path: '/airports', title: 'Airports' }, { path: '/alerts', title: 'Alerts' }, { path: '/statistics', title: 'Statistics' }, { path: '/devtools', title: 'Devtools' }];
 export function AppLayout() {
   const { live, error, statistics } = useDashboard();
   const { pathname } = useLocation();

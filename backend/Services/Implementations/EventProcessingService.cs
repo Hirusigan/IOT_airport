@@ -1,6 +1,6 @@
 namespace Luggage;
 
-public class EventProcessingService(IEventRepository events, IAssignmentRepository assignments, IFlightRepository flights, ILuggageStateRepository states, IAirportRepository airports, IEventValidationService validator, IRuleService rules, IUnitOfWork work, ProcessingGate gate, IDashboardNotifier notifications, TimeProvider clock) : IEventProcessingService
+public class EventProcessingService(IEventRepository events, IAssignmentRepository assignments, IFlightRepository flights, ILuggageStateRepository states, IAirportRepository airports, IJourneyRepository journeys, ITripRepository trips, IEventValidationService validator, IRuleService rules, IUnitOfWork work, ProcessingGate gate, IDashboardNotifier notifications, TimeProvider clock) : IEventProcessingService
 {
     public async Task<bool> Process(string topic, string raw, string region)
     {
@@ -20,6 +20,22 @@ public class EventProcessingService(IEventRepository events, IAssignmentReposito
             if (e.EventType == "luggage")
             {
                 var b = JsonContract.Data<BagData>(e.Data);
+                var journey = await journeys.GetAsync(b.JourneyId);
+                if (journey == null)
+                {
+                    var flightId = b.FlightId ?? throw new ArgumentException("A first check-in must identify its planned flight");
+                    var flight = await flights.GetAsync(flightId) ?? throw new ArgumentException("Missing flight");
+                    var tripId = b.TripId ?? b.JourneyId;
+                    var trip = await trips.GetAsync(tripId);
+                    if (trip != null && (trip.RunId != e.SimulationRunId || trip.LuggageId != b.LuggageId))
+                        throw new ArgumentException("Trip identity conflicts with luggage/run");
+                    if (trip == null) trips.Add(new Trip { Id = tripId, RunId = e.SimulationRunId, LuggageId = b.LuggageId });
+                    journey = new Journey { Id = b.JourneyId, RunId = e.SimulationRunId, LuggageId = b.LuggageId,
+                        TripId = tripId, LegOrder = b.LegOrder };
+                    journeys.Add(journey);
+                    assignments.Add(new Assignment { JourneyId = journey.Id, FlightId = flight.Id });
+                    await work.SaveChangesAsync();
+                }
                 journeyId = row.JourneyId = b.JourneyId;
                 var assignment = await assignments.GetByJourneyAsync(b.JourneyId);
                 var flight = await flights.GetAsync(assignment.FlightId) ?? throw new ArgumentException("Missing flight");

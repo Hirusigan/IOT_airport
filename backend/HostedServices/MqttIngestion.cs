@@ -31,7 +31,6 @@ public class MqttIngestion(IServiceScopeFactory scopes, IConfiguration config, B
         };
         var options = new MqttClientOptionsBuilder().WithClientId("luggage-backend-eu")
             .WithTcpServer(config["Mqtt:Host"] ?? "localhost", config.GetValue("Mqtt:Port", 1883))
-            .WithCredentials(config["Mqtt:Username"] ?? "backend", config["Mqtt:Password"])
             .WithCleanSession(false).Build();
         int delay = 1;
         while (!token.IsCancellationRequested)

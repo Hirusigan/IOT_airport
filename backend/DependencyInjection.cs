@@ -8,6 +8,8 @@ public static class DependencyInjection
         services.AddDbContext<TrackingDbContext>(options => options.UseNpgsql(config.GetConnectionString("Database")
             ?? throw new InvalidOperationException("ConnectionStrings__Database is required")));
         services.AddSingleton<ProcessingGate>();
+        services.AddSingleton<IAirportBrokerProvisioner, AirportBrokerProvisioner>();
+        services.AddHttpClient();
         services.AddSingleton<DevtoolsGate>();
         services.AddSingleton<SimulationRunner>();
         services.AddSingleton<ISimulationRunner>(sp => sp.GetRequiredService<SimulationRunner>());
@@ -39,7 +41,6 @@ public static class DependencyInjection
         services.AddScoped<IEventValidationService, EventValidationService>();
         services.AddScoped<IEventProcessingService, EventProcessingService>();
         services.AddScoped<IRuleService, RuleService>();
-        services.AddScoped<IRunImportService, RunImportService>();
         services.AddScoped<IDeadlineService, DeadlineService>();
         services.AddScoped<IDiagnosticService, DiagnosticService>();
         services.AddTransient<IDashboardNotifier, SignalRDashboardNotifier>();

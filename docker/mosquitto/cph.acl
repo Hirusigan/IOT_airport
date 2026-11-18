@@ -1,0 +1,3 @@
+topic read airport/CPH/#
+topic write airport/CPH/#
+topic read $SYS/#

@@ -18,4 +18,18 @@ public class AirportsController(IAirportService airports) : ControllerBase
         catch (ArgumentException ex) { return BadRequest(ex.Message); }
         catch (ConflictException ex) { return Conflict(ex.Message); }
     }
+    [HttpPost("schedule")]
+    public async Task<IActionResult> Schedule(FlightSchedule schedule)
+    {
+        try { await airports.RegisterSchedule(schedule); return Accepted(); }
+        catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        catch (ConflictException ex) { return Conflict(ex.Message); }
+    }
+    [HttpPost("flights/{flightId}/departure")]
+    public async Task<IActionResult> Departure(string flightId, FlightDepartureUpdate departure)
+    {
+        try { await airports.RecordDeparture(flightId, departure); return Accepted(); }
+        catch (ArgumentException ex) { return BadRequest(ex.Message); }
+        catch (ConflictException ex) { return Conflict(ex.Message); }
+    }
 }

@@ -22,11 +22,21 @@ public class EventValidationService(IAirportRepository airports, IDeviceReposito
             if (b.Sequence <= 0 || b.Stage is not ("checkin" or "security" or "sorted" or "loaded" or "arrived"))
                 throw new ArgumentException("Invalid sequence or stage");
             var journey = await journeys.GetAsync(b.JourneyId);
-            if (journey == null || journey.LuggageId != b.LuggageId || journey.RunId != e.SimulationRunId)
-                throw new ArgumentException("Unknown journey/luggage/run");
-            if (journey.LegOrder > 1)
+            if (journey == null)
             {
-                var previous = await journeys.GetPreviousLegAsync(journey.TripId, journey.LegOrder)
+                if (b.Stage != "checkin" || string.IsNullOrWhiteSpace(b.FlightId))
+                    throw new ArgumentException("A first check-in must identify its planned flight");
+                var plannedFlight = await flights.GetAsync(b.FlightId);
+                if (plannedFlight == null || plannedFlight.RunId != e.SimulationRunId)
+                    throw new ArgumentException("Unknown flight/run");
+            }
+            else if (journey.LuggageId != b.LuggageId || journey.RunId != e.SimulationRunId)
+                throw new ArgumentException("Unknown journey/luggage/run");
+            var tripId = journey?.TripId ?? b.TripId ?? b.JourneyId;
+            var legOrder = journey?.LegOrder ?? b.LegOrder;
+            if (legOrder > 1)
+            {
+                var previous = await journeys.GetPreviousLegAsync(tripId, legOrder)
                     ?? throw new ArgumentException("Missing preceding trip leg");
                 var previousState = await states.GetAsync(previous.Id);
                 var previousAssignment = await assignments.GetByJourneyAsync(previous.Id);

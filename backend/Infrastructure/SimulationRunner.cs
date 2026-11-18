@@ -1,9 +1,8 @@
-using System.Diagnostics;
+using System.Net.Http.Json;
 using System.Text.Json;
-using System.Threading.Channels;
 namespace Luggage;
 
-public sealed class SimulationRunner(IServiceScopeFactory scopes, IConfiguration config, ILogger<SimulationRunner> log) : BackgroundService, ISimulationRunner
+public sealed class SimulationRunner(IHttpClientFactory clients, IConfiguration config, ILogger<SimulationRunner> log) : BackgroundService, ISimulationRunner
 {
     public IReadOnlyList<ScenarioDTO> Scenarios { get; } = [
         new("mixed", "All scenarios", "Normal arrival, missing loading, wrong flight and unexpected airport."),
@@ -12,101 +11,91 @@ public sealed class SimulationRunner(IServiceScopeFactory scopes, IConfiguration
         new("missed", "Missed flight", "A bag is never loaded: warning followed by a missed-flight alert."),
         new("wrong-flight", "Wrong flight", "A bag is loaded onto the wrong flight."),
         new("unexpected-airport", "Unexpected airport", "A bag is scanned at the wrong airport.")];
-    private readonly object sync = new();
-    private readonly Channel<string> requests = Channel.CreateUnbounded<string>();
-    private SimulationStatusDTO status = new("Idle");
-    private CancellationTokenSource? cancellation;
-    private TaskCompletionSource? finished;
-    private string DirectoryPath => config["Simulation:RunsDirectory"] ?? "/runs";
+    readonly object sync = new();
+    SimulationStatusDTO status = new("Idle");
+    CancellationTokenSource? cancellation;
+    Task? polling;
+    string RunsDirectory => config["Simulation:RunsDirectory"] ?? "/runs";
+    string Url => config["AirportSimulation:Url"] ?? "http://airport-simulation:8080";
     public SimulationStatusDTO Status { get { lock (sync) return status; } }
-    private void Update(SimulationStatusDTO value)
+    void Update(SimulationStatusDTO value)
     {
         lock (sync) status = value;
-        try
-        {
-            var path = Path.Combine(DirectoryPath, "status.json");
-            File.WriteAllText(path + ".tmp", JsonSerializer.Serialize(value));
-            File.Move(path + ".tmp", path, true);
-        }
+        try { Directory.CreateDirectory(RunsDirectory); File.WriteAllText(Path.Combine(RunsDirectory, "status.json"), JsonSerializer.Serialize(value)); }
         catch (IOException ex) { log.LogWarning(ex, "Could not persist simulation status"); }
     }
-    public Task Start(string scenarioId)
+    public async Task Start(string scenarioId)
     {
         if (!Scenarios.Any(x => x.Id == scenarioId)) throw new ArgumentException("Unknown scenario");
-        lock (sync)
-        {
-            if (finished != null && !finished.Task.IsCompleted) throw new ConflictException("A simulation is already running");
-            cancellation = new CancellationTokenSource();
-            finished = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            Update(new("Starting", scenarioId, StartedAt: DateTimeOffset.UtcNow));
-            requests.Writer.TryWrite(scenarioId);
-        }
-        return Task.CompletedTask;
+        lock (sync) if (polling is { IsCompleted: false }) throw new ConflictException("A simulation is already running");
+        using var client = clients.CreateClient();
+        client.BaseAddress = new Uri(Url);
+        var response = await client.PostAsJsonAsync("/simulation/start", new { scenarioId });
+        if (response.StatusCode == System.Net.HttpStatusCode.Conflict) throw new ConflictException("A simulation is already running");
+        if (!response.IsSuccessStatusCode) throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        var remote = await response.Content.ReadFromJsonAsync<SimulationStatusDTO>() ?? new("Starting", scenarioId);
+        Update(remote);
+        cancellation = new CancellationTokenSource();
+        polling = Poll(cancellation.Token);
     }
     public async Task Stop()
     {
-        Task? pending;
-        lock (sync) { cancellation?.Cancel(); pending = finished?.Task; }
-        if (pending != null) await pending;
+        using var client = clients.CreateClient(); client.BaseAddress = new Uri(Url);
+        var response = await client.PostAsync("/simulation/stop", null);
+        response.EnsureSuccessStatusCode();
+        var remote = await response.Content.ReadFromJsonAsync<SimulationStatusDTO>();
+        if (remote != null) Update(remote);
+        cancellation?.Cancel();
+        if (polling != null) await polling;
     }
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    async Task Poll(CancellationToken token)
     {
-        Directory.CreateDirectory(DirectoryPath);
-        var savedPath = Path.Combine(DirectoryPath, "status.json");
-        if (File.Exists(savedPath))
+        using var client = clients.CreateClient(); client.BaseAddress = new Uri(Url);
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                var remote = await client.GetFromJsonAsync<SimulationStatusDTO>("/simulation/status", token);
+                if (remote != null) Update(remote);
+                if (remote?.State is "Completed" or "Stopped" or "Failed" or "Idle") return;
+                await Task.Delay(1000, token);
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception ex) { log.LogWarning(ex, "Could not poll Airport Simulation status"); Update(Status with { State = "Failed", Error = ex.Message }); }
+    }
+    protected override async Task ExecuteAsync(CancellationToken token)
+    {
+        Directory.CreateDirectory(RunsDirectory);
+        var path = Path.Combine(RunsDirectory, "status.json");
+        if (File.Exists(path))
         {
             try
             {
-                var saved = JsonSerializer.Deserialize<SimulationStatusDTO>(File.ReadAllText(savedPath));
-                if (saved != null) Update(saved.State is "Starting" or "Running" ? saved with { State = "Interrupted", Error = "Backend restarted during simulation." } : saved);
+                var saved = JsonSerializer.Deserialize<SimulationStatusDTO>(File.ReadAllText(path));
+                if (saved != null && saved.State is "Starting" or "Running")
+                {
+                    try
+                    {
+                        using var client = clients.CreateClient(); client.BaseAddress = new Uri(Url);
+                        client.Timeout = TimeSpan.FromSeconds(5);
+                        var remote = await client.GetFromJsonAsync<SimulationStatusDTO>("/simulation/status", token);
+                        if (remote?.State is "Starting" or "Running")
+                        {
+                            Update(remote);
+                            cancellation = new CancellationTokenSource();
+                            polling = Poll(cancellation.Token);
+                            return;
+                        }
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    { log.LogWarning(ex, "Could not recover Airport Simulation status after backend restart"); }
+                    Update(saved with { State = "Interrupted", Error = "Backend restarted during simulation." });
+                }
+                else if (saved != null) Update(saved);
             }
             catch (JsonException ex) { log.LogWarning(ex, "Could not read previous simulation status"); }
         }
-        try
-        {
-            await foreach (var scenario in requests.Reader.ReadAllAsync(stoppingToken))
-            {
-                using var linked = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, cancellation!.Token);
-                try { await Run(scenario, linked.Token); }
-                catch (OperationCanceledException) { Update(Status with { State = "Stopped" }); }
-                catch (Exception ex) { log.LogError(ex, "Simulation failed"); Update(Status with { State = "Failed", Error = ex.Message }); }
-                finally { lock (sync) { cancellation?.Dispose(); cancellation = null; finished!.TrySetResult(); } }
-            }
-        }
-        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
-    }
-    private async Task Run(string scenario, CancellationToken token)
-    {
-        var path = Path.Combine(DirectoryPath, $"{Guid.NewGuid()}.json");
-        var scenarioPath = Path.Combine(config["Simulation:ScenariosDirectory"] ?? "/app/scenarios", $"{scenario}.json");
-        await Execute(["--prepare", scenarioPath, path], token);
-        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(path, token));
-        var manifest = JsonContract.Read<RunImport>(document.RootElement.GetProperty("manifest").GetRawText());
-        token.ThrowIfCancellationRequested();
-        using (var scope = scopes.CreateScope()) await scope.ServiceProvider.GetRequiredService<IRunImportService>().Import(manifest);
-        token.ThrowIfCancellationRequested();
-        Update(Status with { State = "Running", RunId = manifest.SimulationRunId, TotalEvents = document.RootElement.GetProperty("events").GetArrayLength() });
-        await Execute(["--publish", path], token, true);
-        Update(Status with { State = "Completed" });
-    }
-    private async Task Execute(string[] arguments, CancellationToken token, bool publishing = false)
-    {
-        var start = new ProcessStartInfo(config["Simulation:Executable"] ?? "/app/simulation") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
-        foreach (var argument in arguments) start.ArgumentList.Add(argument);
-        start.Environment["MQTT_PASSWORD"] = config["Simulation:Password"] ?? throw new InvalidOperationException("Simulation credentials are missing");
-        using var process = Process.Start(start) ?? throw new InvalidOperationException("Could not start simulation");
-        var errors = process.StandardError.ReadToEndAsync(token);
-        try
-        {
-            while (await process.StandardOutput.ReadLineAsync(token) is { } line)
-                if (publishing && line.StartsWith("Published ")) Update(Status with { PublishedEvents = Status.PublishedEvents + 1 });
-            await process.WaitForExitAsync(token);
-            var error = await errors;
-            if (process.ExitCode != 0) throw new InvalidOperationException(string.IsNullOrWhiteSpace(error) ? "Simulator exited unsuccessfully" : error.Trim());
-        }
-        finally
-        {
-            if (!process.HasExited) { process.Kill(true); await process.WaitForExitAsync(); }
-        }
+        await Task.CompletedTask;
     }
 }

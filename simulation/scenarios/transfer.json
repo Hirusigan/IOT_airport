@@ -23,9 +23,10 @@
     { "time": 15, "eventType": "luggage", "airport": "AAR", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-1", "sequence": 3, "stage": "loaded", "flightId": "FLIGHT-OUT" },
     { "time": 30, "eventType": "departure", "airport": "AAR", "deviceId": "gate-01", "flightId": "FLIGHT-OUT" },
     { "time": 45, "eventType": "luggage", "airport": "CPH", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-1", "sequence": 4, "stage": "arrived" },
-    { "time": 50, "eventType": "luggage", "airport": "CPH", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-2", "sequence": 1, "stage": "sorted" },
-    { "time": 60, "eventType": "luggage", "airport": "CPH", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-2", "sequence": 2, "stage": "loaded", "flightId": "FLIGHT-RETURN" },
+    { "time": 48, "eventType": "luggage", "airport": "CPH", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-2", "sequence": 1, "stage": "checkin", "flightId": "FLIGHT-RETURN" },
+    { "time": 50, "eventType": "luggage", "airport": "CPH", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-2", "sequence": 2, "stage": "sorted" },
+    { "time": 60, "eventType": "luggage", "airport": "CPH", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-2", "sequence": 3, "stage": "loaded", "flightId": "FLIGHT-RETURN" },
     { "time": 75, "eventType": "departure", "airport": "CPH", "deviceId": "gate-01", "flightId": "FLIGHT-RETURN" },
-    { "time": 90, "eventType": "luggage", "airport": "AAR", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-2", "sequence": 3, "stage": "arrived" }
+    { "time": 90, "eventType": "luggage", "airport": "AAR", "deviceId": "scanner-001", "luggageId": "BAG-TRANSFER", "journeyId": "LEG-2", "sequence": 4, "stage": "arrived" }
   ]
 }
