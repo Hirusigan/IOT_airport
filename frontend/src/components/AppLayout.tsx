@@ -12,7 +12,7 @@ export function AppLayout() {
   const { live, error, statistics } = useDashboard();
   const { pathname } = useLocation();
   const title =
-    navigation.find((item) => item.path === pathname)?.title ?? 'Overview';
+    navigation.find((item) => item.path === pathname)?.title ?? 'Overviewz';
   return (
     <div className="shell">
       <aside>

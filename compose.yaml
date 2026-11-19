@@ -16,12 +16,12 @@ services:
     image: eclipse-mosquitto:2.0.22
     restart: unless-stopped
     command: ["mosquitto", "-c", "/mosquitto/config/regional.conf"]
-    volumes:
-      [
-        "./docker/mosquitto/regional.conf:/mosquitto/config/regional.conf:ro",
-        "./docker/mosquitto/regional.acl:/mosquitto/config/regional.acl:ro",
-        "regional-data:/mosquitto/data",
-      ]
+    configs:
+      - source: regional-conf
+        target: /mosquitto/config/regional.conf
+      - source: regional-acl
+        target: /mosquitto/config/regional.acl
+    volumes: ["regional-data:/mosquitto/data"]
     networks: [airport-brokers]
     healthcheck:
       test:
@@ -36,12 +36,12 @@ services:
     image: eclipse-mosquitto:2.0.22
     restart: unless-stopped
     command: ["mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
-    volumes:
-      [
-        "./docker/mosquitto/aar.conf:/mosquitto/config/mosquitto.conf:ro",
-        "./docker/mosquitto/aar.acl:/mosquitto/config/airport.acl:ro",
-        "aar-data:/mosquitto/data",
-      ]
+    configs:
+      - source: aar-conf
+        target: /mosquitto/config/mosquitto.conf
+      - source: aar-acl
+        target: /mosquitto/config/airport.acl
+    volumes: ["aar-data:/mosquitto/data"]
     networks: [airport-brokers]
     depends_on: [regional]
     healthcheck:
@@ -57,12 +57,12 @@ services:
     image: eclipse-mosquitto:2.0.22
     restart: unless-stopped
     command: ["mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
-    volumes:
-      [
-        "./docker/mosquitto/cph.conf:/mosquitto/config/mosquitto.conf:ro",
-        "./docker/mosquitto/cph.acl:/mosquitto/config/airport.acl:ro",
-        "cph-data:/mosquitto/data",
-      ]
+    configs:
+      - source: cph-conf
+        target: /mosquitto/config/mosquitto.conf
+      - source: cph-acl
+        target: /mosquitto/config/airport.acl
+    volumes: ["cph-data:/mosquitto/data"]
     networks: [airport-brokers]
     depends_on: [regional]
     healthcheck:
@@ -142,3 +142,61 @@ volumes:
   simulation-runs:
   airport-broker-config:
     name: airport-broker-config
+
+configs:
+  regional-conf:
+    content: |
+      listener 1883 0.0.0.0
+      allow_anonymous true
+      acl_file /mosquitto/config/regional.acl
+      persistence true
+      persistence_location /mosquitto/data/
+      log_dest stdout
+  regional-acl:
+    content: |
+      topic readwrite airport/#
+      topic read $$SYS/#
+  aar-conf:
+    content: |
+      listener 1883 0.0.0.0
+      allow_anonymous true
+      acl_file /mosquitto/config/airport.acl
+      persistence true
+      persistence_location /mosquitto/data/
+      connection regional-AAR
+      address regional:1883
+      local_clientid bridge-AAR
+      remote_clientid bridge-AAR
+      try_private false
+      notifications false
+      cleansession false
+      restart_timeout 1 30
+      topic airport/AAR/# out 1
+      log_dest stdout
+  aar-acl:
+    content: |
+      topic read airport/AAR/#
+      topic write airport/AAR/#
+      topic read $$SYS/#
+  cph-conf:
+    content: |
+      listener 1883 0.0.0.0
+      allow_anonymous true
+      acl_file /mosquitto/config/airport.acl
+      persistence true
+      persistence_location /mosquitto/data/
+      connection regional-CPH
+      address regional:1883
+      local_clientid bridge-CPH
+      remote_clientid bridge-CPH
+      try_private false
+      notifications false
+      cleansession false
+      restart_timeout 1 30
+      topic airport/CPH/# out 1
+      log_dest stdout
+  cph-acl:
+    content: |
+      topic read airport/CPH/#
+      topic write airport/CPH/#
+      topic read $$SYS/#
