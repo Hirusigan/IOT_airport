@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { luggageService } from '../services/luggageService';
 import { isCanceled, requestError } from '../services/apiClient';
 import type { LuggageDetails } from '../types/LuggageDetails';
+
 export function useLuggageSearch(id: string, revision: number) {
   const [result, setResult] = useState<{
     id: string;

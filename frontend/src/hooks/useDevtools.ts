@@ -3,6 +3,7 @@ import { devtoolsService } from '../services/devtoolsService';
 import { isCanceled, requestError } from '../services/apiClient';
 import type { Scenario } from '../types/Scenario';
 import type { SimulationStatus } from '../types/SimulationStatus';
+
 export function useDevtools() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [status, setStatus] = useState<SimulationStatus | null>(null);
@@ -11,6 +12,8 @@ export function useDevtools() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const mounted = useRef(false);
+  const actionId = useRef(0);
+  const activeActions = useRef(0);
   useEffect(() => {
     mounted.current = true;
     const controller = new AbortController();
@@ -18,12 +21,13 @@ export function useDevtools() {
     const poll = async () => {
       if (polling) return;
       polling = true;
+      const currentActionId = actionId.current;
       try {
         const [available, result] = await Promise.all([
           devtoolsService.scenarios(controller.signal),
           devtoolsService.status(controller.signal),
         ]);
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && currentActionId === actionId.current) {
           setScenarios(available);
           setStatus(result);
           setPollError('');
@@ -47,20 +51,24 @@ export function useDevtools() {
   }, []);
   const execute = useCallback(
     async (action: () => Promise<unknown>, success: string) => {
+      const currentActionId = ++actionId.current;
+      activeActions.current += 1;
       setBusy(true);
       setError('');
       setMessage('');
       try {
         await action();
         const result = await devtoolsService.status();
-        if (mounted.current) {
+        if (mounted.current && currentActionId === actionId.current) {
           setStatus(result);
           setMessage(success);
         }
       } catch (e) {
-        if (mounted.current) setError(requestError(e));
+        if (mounted.current && currentActionId === actionId.current)
+          setError(requestError(e));
       } finally {
-        if (mounted.current) setBusy(false);
+        activeActions.current -= 1;
+        if (mounted.current) setBusy(activeActions.current > 0);
       }
     },
     [],

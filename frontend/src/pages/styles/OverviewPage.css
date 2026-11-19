@@ -1,0 +1,33 @@
+.overview-statistics .stat-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.overview-statistics .stat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.overview-statistics .stat-content strong {
+  display: block;
+}
+
+.overview-statistics .stat-content span {
+  display: block;
+  overflow-wrap: break-word;
+}
+
+.overview-statistics .stat-icon {
+  position: static;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(20px, 2.5vw, 30px);
+  color: #94a3b8;
+}
+.overview-statistics .stat-icon.amber   { color: #d97706}
+.overview-statistics .stat-icon.blue   { color: #2563eb; }
+.overview-statistics .stat-icon.red    { color: #dc2626; }

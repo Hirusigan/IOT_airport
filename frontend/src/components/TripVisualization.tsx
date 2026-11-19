@@ -4,6 +4,7 @@ import type { LuggageDetails } from '../types/LuggageDetails';
 import { buildTripView } from '../helpers/buildTripView';
 import { formatDateTime } from '../helpers/formatDateTime';
 import { TripMap } from './TripMap';
+import './styles/TripVisualization.css';
 
 export function TripVisualization({
   bag,

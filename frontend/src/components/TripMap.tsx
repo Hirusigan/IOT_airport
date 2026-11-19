@@ -5,6 +5,7 @@ import airportIconUrl from '../assets/airport.svg';
 import luggageIconUrl from '../assets/luggage.svg';
 import type { TripView } from '../types/TripView';
 import { useLuggageAnimation } from '../hooks/useLuggageAnimation';
+import './styles/Maps.css';
 
 const airportIcon = L.icon({
   iconUrl: airportIconUrl,
@@ -47,9 +48,12 @@ export function TripMap({ view }: { view: TripView }) {
     view.deviation,
   ]);
   useEffect(() => {
-    map.current = L.map(host.current!).setView([56, 11.6], 7);
+    map.current = L.map(host.current!, { attributionControl: false }).setView(
+      [56, 11.6],
+      7,
+    );
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
+      attribution: '',
       maxZoom: 18,
     }).addTo(map.current);
     layers.current = L.layerGroup().addTo(map.current);

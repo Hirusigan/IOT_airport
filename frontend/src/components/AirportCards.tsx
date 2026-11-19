@@ -1,4 +1,5 @@
 import type { Airport } from '../types/Airport';
+import './styles/Dashboard.css';
 export function AirportCards({
   airports,
   select,

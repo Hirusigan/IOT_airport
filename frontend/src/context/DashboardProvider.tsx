@@ -26,6 +26,7 @@ function useDashboardState() {
   const [query, setQuery] = useState('');
   const [searched, setSearched] = useState('');
   const [activeOnly, setActiveOnly] = useState(true);
+
   useEffect(() => {
     const controller = new AbortController();
     let refreshing = false;

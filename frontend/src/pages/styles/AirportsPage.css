@@ -1,0 +1,111 @@
+.airport-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+  max-width: 36rem;
+}
+
+.airport-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.airport-form label:has(#airport-name) {
+  grid-column: 1 / -1;
+}
+
+.airport-form input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #1e293b;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.airport-form input::placeholder {
+  color: #94a3b8;
+}
+
+/* Remove focus outline/ring when typing or focusing inputs */
+.airport-form input:focus,
+.airport-form input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: #cbd5e1;
+}
+
+/* Remove number input step arrows (spinners) */
+.airport-form input[type="number"]::-webkit-outer-spin-button,
+.airport-form input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.airport-form input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+#airport-code {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+
+#airport-lat,
+#airport-lon {
+  font-variant-numeric: tabular-nums;
+}
+
+.airport-form input:user-invalid {
+  border-color: #dc2626;
+}
+
+.airport-form .primary {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: 0.25rem;
+  padding: 0.65rem 1.35rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #ffffff;
+  background-color: #1b7a75;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.airport-form .primary:hover:not(:disabled) {
+  background-color: #15635f;
+}
+
+.airport-form .primary:focus,
+.airport-form .primary:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.airport-form .primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 540px) {
+  .airport-form {
+    grid-template-columns: 1fr;
+  }
+
+  .airport-form .primary {
+    width: 100%;
+  }
+}

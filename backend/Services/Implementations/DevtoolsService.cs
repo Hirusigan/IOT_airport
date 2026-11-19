@@ -29,4 +29,14 @@ public class DevtoolsService(
         await transaction.CommitAsync();
         await notifications.Send();
     }
+
+    public async Task<bool> SeedAirport(string airportId)
+    {
+        await using var transaction = await airports.BeginTransactionAsync();
+        if (!await DatabaseSeeder.SeedAirportAsync(db, airportId))
+            return false;
+        await transaction.CommitAsync();
+        await notifications.Send();
+        return true;
+    }
 }

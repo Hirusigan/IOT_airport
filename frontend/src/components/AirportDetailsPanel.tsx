@@ -1,6 +1,7 @@
 import type { AirportDetails } from '../types/AirportDetails';
 import { formatDateTime as time } from '../helpers/formatDateTime';
 import { AlertList } from './AlertList';
+import './styles/Dashboard.css';
 export function AirportDetailsPanel({
   id,
   details,

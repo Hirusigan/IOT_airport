@@ -1,0 +1,67 @@
+.trip-visualization {
+  margin-top: 28px;
+}
+.trip-visualization h3 {
+  margin: 0;
+}
+.trip-picker {
+  font-size: 12px;
+  min-width: 0;
+}
+.trip-picker select {
+  max-width: 340px;
+}
+.trip-status {
+  font-size: 14px;
+  color: #247f77;
+}
+.trip-legs {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.trip-legs li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+.leg-number,
+.route-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+}
+.leg-number {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.route-number {
+  background: #172c3d;
+  border: 2px solid white;
+}
+.trip-map {
+  margin-top: 12px;
+}
+@media (max-width: 600px) {
+  .trip-visualization .panel-heading {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .trip-picker {
+    width: 100%;
+  }
+  .trip-picker select {
+    margin-left: 0;
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+  }
+}

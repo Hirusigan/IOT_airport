@@ -21,4 +21,23 @@ public static class DatabaseSeeder
         }
         await db.SaveChangesAsync();
     }
+
+    public static async Task<bool> SeedAirportAsync(TrackingDbContext db, string airportId)
+    {
+        if (!await db.Airports.AnyAsync(x => x.Id == airportId))
+            return false;
+
+        foreach (var device in new[]
+        {
+            new Device { Id = "scanner-001", AirportId = airportId, Type = DeviceType.Scanner },
+            new Device { Id = "gate-01", AirportId = airportId, Type = DeviceType.Gate }
+        })
+        {
+            if (!await db.Devices.AnyAsync(x => x.AirportId == airportId && x.Id == device.Id))
+                db.Devices.Add(device);
+        }
+
+        await db.SaveChangesAsync();
+        return true;
+    }
 }

@@ -28,4 +28,9 @@ export const devtoolsService = {
   async seed() {
     await apiClient.post('/devtools/database/seed');
   },
+  async seedAirport(airportId: string) {
+    await apiClient.post(
+      `/devtools/database/seed/${encodeURIComponent(airportId)}`,
+    );
+  },
 };

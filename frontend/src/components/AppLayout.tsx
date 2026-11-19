@@ -1,12 +1,24 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useDashboard } from '../context/DashboardProvider';
+import luggageIcon from '../assets/luggage.svg';
+import {
+  FaSuitcase,
+  FaPlane,
+  FaBell,
+  FaChartBar,
+  FaHeadSideVirus,
+} from 'react-icons/fa';
+import { PiHandEyeFill } from "react-icons/pi";
+import './styles/AppLayout.css';
+
+
 const navigation = [
-  { path: '/', title: 'Overview' },
-  { path: '/luggage', title: 'Luggage' },
-  { path: '/airports', title: 'Airports' },
-  { path: '/alerts', title: 'Alerts' },
-  { path: '/statistics', title: 'Statistics' },
-  { path: '/devtools', title: 'Devtools' },
+  { path: '/', title: 'Overview', icon: PiHandEyeFill },
+  { path: '/luggage', title: 'Luggage', icon: FaSuitcase },
+  { path: '/airports', title: 'Airports', icon: FaPlane },
+  { path: '/alerts', title: 'Alerts', icon: FaBell },
+  { path: '/statistics', title: 'Statistics', icon: FaChartBar },
+  { path: '/devtools', title: 'Devtools', icon: FaHeadSideVirus },
 ];
 export function AppLayout() {
   const { live, error, statistics } = useDashboard();
@@ -17,9 +29,17 @@ export function AppLayout() {
     <div className="shell">
       <aside>
         <div className="brand">
-          <span>↗</span> Luggage
-          <span className="brand-sub">Airport operations</span>
-        </div>
+          <img
+            src={luggageIcon}
+            alt=""
+            aria-hidden="true"
+            className="brand-icon"
+          />
+          <div className="brand-text">
+            <span className="brand-title">Luggage</span>
+            <span className="brand-sub">Airport operations</span>
+          </div>
+      </div>
         <nav>
           {navigation.map((item) => (
             <NavLink
@@ -28,13 +48,11 @@ export function AppLayout() {
               end
               className={({ isActive }) => (isActive ? 'selected' : '')}
             >
-              {item.title}
+              <item.icon />
+              <span>{item.title}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="sidebar-bottom">
-          EUROPE REGION<small>Initial course project</small>
-        </div>
       </aside>
       <main>
         <header>
@@ -43,7 +61,8 @@ export function AppLayout() {
             <h1>{title}</h1>
           </div>
           <span className={`connection ${live === 'Live' ? 'online' : ''}`}>
-            ● {live}
+              <span className="connection-dot" aria-hidden="true" />
+              {live}
           </span>
         </header>
         {error && (

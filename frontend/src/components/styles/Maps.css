@@ -1,0 +1,22 @@
+.map {
+  height: 420px;
+  border-radius: 8px;
+  background: #dde7ea;
+  z-index: 0;
+}
+.map-note {
+  font-size: 11px;
+  color: #718394;
+  margin-bottom: 0;
+}
+.map-label {
+  border: 0;
+  background: white;
+  color: #243344;
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .map {
+    height: 330px;
+  }
+}

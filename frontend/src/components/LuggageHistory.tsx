@@ -1,5 +1,6 @@
 import type { LuggageDetails } from '../types/LuggageDetails';
 import { formatDateTime as time } from '../helpers/formatDateTime';
+import './styles/Luggage.css';
 export function LuggageHistory({
   id,
   bag,

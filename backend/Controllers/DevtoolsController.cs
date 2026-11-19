@@ -56,4 +56,10 @@ public class DevtoolsController(IDevtoolsService service) : ControllerBase
         await service.Seed();
         return NoContent();
     }
+
+    [HttpPost("database/seed/{airportId}")]
+    public async Task<IActionResult> SeedAirport(string airportId)
+    {
+        return await service.SeedAirport(airportId) ? NoContent() : NotFound();
+    }
 }

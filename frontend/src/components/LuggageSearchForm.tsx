@@ -1,3 +1,5 @@
+import './styles/Luggage.css';
+
 export function LuggageSearchForm({
   query,
   change,

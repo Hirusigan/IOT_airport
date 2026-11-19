@@ -1,36 +1,60 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { airportService } from '../services/airportService';
 import { requestError } from '../services/apiClient';
+import './styles/AirportsPage.css';
+
+const INITIAL_FORM = {
+  id: '',
+  name: '',
+  latitude: '',
+  longitude: '',
+};
+
+type StatusState = {
+  type: 'idle' | 'success' | 'error';
+  text: string;
+};
+
 export function AirportsPage() {
-  const [id, setId] = useState('');
-  const [name, setName] = useState('');
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
-  const [message, setMessage] = useState('');
+  const [form, setForm] = useState(INITIAL_FORM);
+  const [status, setStatus] = useState<StatusState>({ type: 'idle', text: '' });
   const [busy, setBusy] = useState(false);
+
+  function handleChange(field: keyof typeof INITIAL_FORM) {
+    return (event: ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      setForm((prev) => ({ ...prev, [field]: value }));
+    };
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
-    setMessage('');
+    setStatus({ type: 'idle', text: '' });
+
     try {
       await airportService.register({
-        id: id.trim().toUpperCase(),
-        name: name.trim(),
-        latitude: Number(latitude),
-        longitude: Number(longitude),
+        id: form.id.trim().toUpperCase(),
+        name: form.name.trim(),
+        latitude: Number(form.latitude),
+        longitude: Number(form.longitude),
         regionId: 'EU',
       });
-      setMessage('Airport registered and broker started.');
-      setId('');
-      setName('');
-      setLatitude('');
-      setLongitude('');
+      setStatus({
+        type: 'success',
+        text: 'Airport registered and broker started.',
+      });
+      setForm(INITIAL_FORM);
     } catch (error) {
-      setMessage(requestError(error));
+      setStatus({
+        type: 'error',
+        text: requestError(error),
+      });
     } finally {
       setBusy(false);
     }
   }
+
   return (
     <section className="panel">
       <h2>Register airport</h2>
@@ -41,51 +65,63 @@ export function AirportsPage() {
         <label>
           Airport code
           <input
+            id="airport-code"
             required
             maxLength={3}
             pattern="[A-Za-z]{3}"
-            value={id}
-            onChange={(e) => setId(e.target.value)}
+            placeholder="e.g. BLL"
+            value={form.id}
+            onChange={handleChange('id')}
           />
         </label>
         <label>
           Name
           <input
+            id="airport-name"
             required
             maxLength={120}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Billund Airport"
+            value={form.name}
+            onChange={handleChange('name')}
           />
         </label>
         <label>
           Latitude
           <input
+            id="airport-lat"
             required
             type="number"
             step="any"
             min="-90"
             max="90"
-            value={latitude}
-            onChange={(e) => setLatitude(e.target.value)}
+            placeholder="e.g. 55.740"
+            value={form.latitude}
+            onChange={handleChange('latitude')}
           />
         </label>
         <label>
           Longitude
           <input
+            id="airport-lon"
             required
             type="number"
             step="any"
             min="-180"
             max="180"
-            value={longitude}
-            onChange={(e) => setLongitude(e.target.value)}
+            placeholder="e.g. 9.152"
+            value={form.longitude}
+            onChange={handleChange('longitude')}
           />
         </label>
-        <button className="primary" disabled={busy}>
+        <button type="submit" className="primary" disabled={busy}>
           {busy ? 'Registering…' : 'Register airport'}
         </button>
       </form>
-      {message && <p role="status">{message}</p>}
+      {status.text && (
+        <p role="status" data-status={status.type}>
+          {status.text}
+        </p>
+      )}
     </section>
   );
 }

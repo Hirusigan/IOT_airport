@@ -1,0 +1,154 @@
+.devtools {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 860px;
+}
+
+.panel-subtitle {
+  margin: 0 0 18px;
+  color: #4b5563;
+}
+
+/* Simulation: 1 row (select + Start + Stop) */
+.devtools-sim-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) 1fr 1fr;
+  gap: 14px;
+  align-items: end;
+}
+
+/* Seed airport & Database: 2-column rows */
+.devtools-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: end;
+}
+
+.devtools-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.devtools-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.devtools-field select {
+  box-sizing: border-box;
+  margin: 0;
+  width: 100%;
+  height: 44px;
+  padding: 0 36px 0 12px;
+  border-radius: 10px;
+  border: 1px solid #cbd7e1;
+  background-color: #ffffff;
+  font-size: 0.95rem;
+  color: #111827;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234b5563' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.devtools-field select:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Shared button base */
+.devtools-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.devtools-btn:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.devtools-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Color variants */
+.devtools-btn.primary {
+  background: #175c4c;
+  color: #ffffff;
+}
+
+.devtools-btn.accent {
+  background: #67c2a3;
+  color: #0f2e26;
+}
+
+.devtools-btn.warning {
+  background: #e6be53;
+  color: #2b2106;
+}
+
+.devtools-btn.danger {
+  background: #e57a67;
+  color: #2b0f0a;
+}
+
+.devtools-btn.neutral {
+  background: #ffffff;
+  color: #1f2937;
+  border-color: #cbd7e1;
+}
+
+.devtools-description {
+  margin: 12px 0 0;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.devtools-status {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.reset-confirmation {
+  margin-top: 20px;
+  padding: 16px;
+  background: #ffeded;
+  border: 1px solid #f5c2c2;
+  border-radius: 10px;
+}
+
+.reset-confirmation p {
+  margin: 0 0 14px;
+}
+
+.devtools-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .devtools-sim-row,
+  .devtools-row {
+    grid-template-columns: 1fr;
+  }
+}
