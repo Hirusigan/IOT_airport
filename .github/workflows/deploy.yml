@@ -58,6 +58,7 @@ jobs:
             andreasfrost1004/luggagetracker-${{ matrix.name }}:latest
             andreasfrost1004/luggagetracker-${{ matrix.name }}:${{ github.sha }}
 
+  
   trigger-watchtower:
     needs: build-and-publish
     if: github.event_name == 'workflow_dispatch' && inputs.publish_to_dockerhub == true
@@ -65,6 +66,7 @@ jobs:
     steps:
       - name: Trigger global Watchtower update
         run: |
-          curl -f -s -S \
+          curl -f -s -S -X POST \
             -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" \
             "${{ secrets.WATCHTOWER_URL }}/v1/update"
+
