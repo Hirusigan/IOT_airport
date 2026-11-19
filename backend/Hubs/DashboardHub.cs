@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 namespace Luggage;
 
-public class DashboardHub : Hub { }
+public class DashboardHub : Hub
+{
+}

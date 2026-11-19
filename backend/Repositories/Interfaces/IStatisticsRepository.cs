@@ -1,3 +1,6 @@
 namespace Luggage;
 
-public interface IStatisticsRepository { Task<StatisticsDTO> GetAsync(); }
+public interface IStatisticsRepository
+{
+    Task<StatisticsDTO> GetAsync();
+}

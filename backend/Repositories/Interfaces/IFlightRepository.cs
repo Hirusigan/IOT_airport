@@ -6,6 +6,5 @@ public interface IFlightRepository : IRepository<Flight>
     Task<bool> ExistsInRunAsync(string id, string runId);
     Task<bool> HasRunAsync(string runId);
     Task<IReadOnlyList<Flight>> GetByAirportAsync(string airportId);
-    Task<IReadOnlyList<Flight>> GetAllAsync();
     Task<IReadOnlyList<Flight>> GetByIdsAsync(string[] ids);
 }

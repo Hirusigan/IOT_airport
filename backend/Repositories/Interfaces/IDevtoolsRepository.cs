@@ -1,3 +1,6 @@
 namespace Luggage;
 
-public interface IDevtoolsRepository { Task ClearAsync(); }
+public interface IDevtoolsRepository
+{
+    Task ClearAsync();
+}

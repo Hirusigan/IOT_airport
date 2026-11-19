@@ -7,10 +7,9 @@ public static class DependencyInjection
     {
         services.AddDbContext<TrackingDbContext>(options => options.UseNpgsql(config.GetConnectionString("Database")
             ?? throw new InvalidOperationException("ConnectionStrings__Database is required")));
-        services.AddSingleton<ProcessingGate>();
+        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddSingleton<IAirportBrokerProvisioner, AirportBrokerProvisioner>();
         services.AddHttpClient();
-        services.AddSingleton<DevtoolsGate>();
         services.AddSingleton<SimulationRunner>();
         services.AddSingleton<ISimulationRunner>(sp => sp.GetRequiredService<SimulationRunner>());
         services.AddHostedService(sp => sp.GetRequiredService<SimulationRunner>());
@@ -29,15 +28,11 @@ public static class DependencyInjection
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<ILuggageStateRepository, LuggageStateRepository>();
         services.AddScoped<IAlertRepository, AlertRepository>();
-        services.AddScoped<IDiagnosticRepository, DiagnosticRepository>();
         services.AddScoped<IStatisticsRepository, StatisticsRepository>();
-        services.AddScoped<IHealthRepository, HealthRepository>();
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAirportService, AirportService>();
         services.AddScoped<ILuggageService, LuggageService>();
         services.AddScoped<IAlertService, AlertService>();
         services.AddScoped<IStatisticsService, StatisticsService>();
-        services.AddScoped<IHealthService, HealthService>();
         services.AddScoped<IEventValidationService, EventValidationService>();
         services.AddScoped<IEventProcessingService, EventProcessingService>();
         services.AddScoped<IRuleService, RuleService>();
@@ -45,7 +40,8 @@ public static class DependencyInjection
         services.AddScoped<IDiagnosticService, DiagnosticService>();
         services.AddTransient<IDashboardNotifier, SignalRDashboardNotifier>();
         services.AddScoped<DatabaseInitializer>();
-        services.AddControllers();
+        services.AddControllers().AddJsonOptions(options =>
+            options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase)));
         services.AddSignalR();
         services.AddHostedService<MqttIngestion>();
         services.AddHostedService<DeadlineTimer>();

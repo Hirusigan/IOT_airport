@@ -1,3 +1,6 @@
 namespace Luggage;
 
-public interface ILuggageService { Task<LuggageDTO?> Get(string id); }
+public interface ILuggageService
+{
+    Task<LuggageDTO?> Get(string id);
+}

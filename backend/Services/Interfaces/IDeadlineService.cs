@@ -1,3 +1,6 @@
 namespace Luggage;
 
-public interface IDeadlineService { Task Evaluate(); }
+public interface IDeadlineService
+{
+    Task Evaluate();
+}

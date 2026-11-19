@@ -1,6 +1,6 @@
 namespace Luggage;
 
-public class DeadlineTimer(IServiceScopeFactory scopes, ILogger<DeadlineTimer> log) : BackgroundService
+public class DeadlineTimer(IServiceScopeFactory scopes) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken token)
     {
@@ -10,10 +10,18 @@ public class DeadlineTimer(IServiceScopeFactory scopes, ILogger<DeadlineTimer> l
             while (await timer.WaitForNextTickAsync(token))
             {
                 using var scope = scopes.CreateScope();
-                try { await scope.ServiceProvider.GetRequiredService<IDeadlineService>().Evaluate(); }
-                catch (Exception ex) { log.LogError(ex, "Deadline evaluation failed; retry next tick"); }
+                try
+                {
+                    await scope.ServiceProvider.GetRequiredService<IDeadlineService>().Evaluate();
+                }
+                catch (Exception)
+                {
+                    // A failed evaluation is retried on the next timer tick.
+                }
             }
         }
-        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+        }
     }
 }

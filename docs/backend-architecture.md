@@ -2,9 +2,9 @@
 
 Controllers handle HTTP routing and response codes, and call service interfaces. Services own airport/schedule validation, event ordering/loading evidence, first-check-in record creation, alert lifecycle, and dashboard status. Services depend on repository interfaces; EF queries stay inside repositories.
 
-`BaseRepository<T>` shares Add/AddRange and protected lookup/query helpers. Concrete repositories define domain-specific operations and composite-key lookups. Dashboard queries use no tracking; mutations use tracked entities. Alert lookup includes pending additions so repeated evaluation cannot add duplicate alerts before saving.
+`Repository<T>` shares keyed lookup, list, add, update, delete, save, and transaction operations. Concrete repositories define domain-specific queries. Dashboard queries use no tracking; mutations use tracked entities. Alert lookup includes pending additions so repeated evaluation cannot add duplicate alerts before saving.
 
-Repositories share the scoped EF `TrackingDbContext` and `IUnitOfWork`. The singleton processing gate serializes schedule registration, ingestion, airport registration, and timer evaluation. Notifications follow successful commits.
+Repositories share the scoped EF `TrackingDbContext`. The singleton processing gate serializes schedule registration, ingestion, airport registration, and timer evaluation. Notifications follow successful commits.
 
 `AirportService` registers flight schedules and airport metadata. New airport metadata triggers `IAirportBrokerProvisioner`, which writes an airport-scoped Mosquitto config and ACL to a shared Docker volume and starts a fixed Mosquitto image through Docker.DotNet on the private broker network. `SimulationRunner` preserves the backend Devtools API while proxying the scenario catalog, start/stop, and status to Airport Simulation over HTTP. Airport Simulation is the source of the supported scenario list.
 

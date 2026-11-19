@@ -1,127 +1,292 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace Luggage;
 
-public class AirportService(IAirportRepository airports, IDeviceRepository devices, IAlertRepository alerts, IFlightRepository flights, IUnitOfWork work,
-    BrokerHealth health, RuleSettings settings, ProcessingGate gate, IDashboardNotifier notifications, TimeProvider clock, IAirportBrokerProvisioner brokers) : IAirportService
+public class AirportService(
+    IAirportRepository airports,
+    IDeviceRepository devices,
+    IAlertRepository alerts,
+    IFlightRepository flights,
+    BrokerHealth health,
+    RuleSettings settings,
+    IDashboardNotifier notifications,
+    TimeProvider clock,
+    IAirportBrokerProvisioner brokers) : IAirportService
 {
     private async Task<AirportDTO> View(Airport airport)
     {
         var activeAlerts = await alerts.GetFilteredAsync(airport.Id, true);
-        var status = activeAlerts.Any(x => x.Severity == AlertSeverity.Red) ? "red" : activeAlerts.Count > 0 ? "orange" : "green";
-        var telemetry = !health.Connected ? "disconnected" : airport.LastSeenAt == null ? "unknown" :
-            clock.GetUtcNow() - airport.LastSeenAt > TimeSpan.FromSeconds(settings.StaleSeconds) ? "stale" : "healthy";
-        return new(airport.Id, airport.Name, airport.Latitude, airport.Longitude, airport.RegionId, airport.LastSeenAt, status, activeAlerts.Count, telemetry);
+        var status = activeAlerts.Any(x => x.Severity == AlertSeverity.Red)
+            ? "red" : activeAlerts.Count > 0 ? "orange" : "green";
+            
+        var telemetry = !health.Connected
+            ? "disconnected"
+            : airport.LastSeenAt == null
+                ? "unknown"
+                : clock.GetUtcNow() - airport.LastSeenAt > TimeSpan.FromSeconds(settings.StaleSeconds)
+                    ? "stale"
+                    : "healthy";
+
+        return new(
+            airport.Id,
+            airport.Name,
+            airport.Latitude,
+            airport.Longitude,
+            airport.RegionId,
+            airport.LastSeenAt,
+            status,
+            activeAlerts.Count,
+            telemetry);
     }
+
     public async Task<IReadOnlyList<AirportDTO>> GetAll()
     {
         var result = new List<AirportDTO>();
-        foreach (var airport in await airports.GetEnabledAsync()) result.Add(await View(airport));
+        foreach (var airport in await airports.GetEnabledAsync())
+        {
+            result.Add(await View(airport));
+        }
+
         return result;
     }
+
     public async Task<AirportDetailsDTO?> GetDetails(string id)
     {
         var airport = await airports.GetAsync(id);
-        return airport == null ? null : new(await View(airport), await flights.GetByAirportAsync(id),
-            (await alerts.GetFilteredAsync(id)).Select(AlertDTO.From).ToList());
+        return airport == null
+            ? null
+            : new AirportDetailsDTO(
+                await View(airport),
+                await flights.GetByAirportAsync(id),
+                (await alerts.GetFilteredAsync(id)).Select(AlertDTO.From).ToList());
     }
+
     public async Task<AirportDTO> Register(Airport airport)
     {
-        if (!AirportValidation.IsValid(airport) || airport.RegionId != "EU" || !airport.Enabled || airport.LastSeenAt != null)
-            throw new ArgumentException("Valid metadata in enabled EU region required");
-        await gate.Mutex.WaitAsync();
+        ValidateAirport(airport);
+        if (await airports.GetAsync(airport.Id) != null)
+        {
+            throw new ConflictException("Airport already exists");
+        }
+
+        await brokers.Provision(airport.Id);
+
         try
         {
-            if (await airports.GetAsync(airport.Id) != null) throw new ConflictException("Airport already exists");
-            await brokers.Provision(airport.Id);
-            airports.Add(airport); await work.SaveChangesAsync();
+            await using var transaction = await airports.BeginTransactionAsync();
+            if (await airports.GetAsync(airport.Id) != null)
+            {
+                throw new ConflictException("Airport already exists");
+            }
+
+            airports.Add(airport);
+            await airports.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
-        finally { gate.Mutex.Release(); }
+        catch (PersistenceConflictException)
+        {
+            throw new ConflictException("Airport already exists");
+        }
+
         await notifications.Send();
         return await View(airport);
     }
+
     public async Task RegisterSchedule(FlightSchedule schedule)
+    {
+        ValidateSchedule(schedule);
+
+        try
+        {
+            await using var transaction = await airports.BeginTransactionAsync();
+            await RegisterScheduleDevices(schedule);
+            await RegisterScheduleFlights(schedule);
+            await airports.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch (PersistenceConflictException)
+        {
+            throw new ConflictException("Schedule conflicts with stored identities");
+        }
+
+        await notifications.Send();
+    }
+
+    private static void ValidateAirport(Airport airport)
+    {
+        if (!AirportValidation.IsValid(airport) || airport.RegionId != "EU" || !airport.Enabled || airport.LastSeenAt != null)
+        {
+            throw new ArgumentException("Valid metadata in enabled EU region required");
+        }
+    }
+
+    private static void ValidateSchedule(FlightSchedule schedule)
     {
         if (string.IsNullOrWhiteSpace(schedule.SimulationRunId) || schedule.Flights.Length == 0 ||
             schedule.Flights.Any(f => string.IsNullOrWhiteSpace(f.Id) || f.ScheduledDeparture == default ||
                 f.ScheduledDeparture.Offset != TimeSpan.Zero ||
-                (f.ScheduledArrival != null && (f.ScheduledArrival.Value.Offset != TimeSpan.Zero || f.ScheduledArrival.Value <= f.ScheduledDeparture)) ||
+                (f.ScheduledArrival != null &&
+                    (f.ScheduledArrival.Value.Offset != TimeSpan.Zero || f.ScheduledArrival.Value <= f.ScheduledDeparture)) ||
                 f.Origin == f.Destination) ||
             schedule.Flights.Select(f => f.Id).Distinct().Count() != schedule.Flights.Length)
-            throw new ArgumentException("Invalid flight schedule");
-        await gate.Mutex.WaitAsync();
-        try
         {
-            foreach (var d in schedule.Devices ?? [])
+            throw new ArgumentException("Invalid flight schedule");
+        }
+    }
+
+    private async Task RegisterScheduleDevices(FlightSchedule schedule)
+    {
+        foreach (var deviceUpdate in schedule.Devices ?? [])
+        {
+            if (!await airports.IsEnabledAsync(deviceUpdate.AirportId) || string.IsNullOrWhiteSpace(deviceUpdate.Id) ||
+                deviceUpdate.Id.Contains('/') || deviceUpdate.Id.Contains('+') || deviceUpdate.Id.Contains('#'))
             {
-                if (!await airports.IsEnabledAsync(d.AirportId) || string.IsNullOrWhiteSpace(d.Id) ||
-                    d.Id.Contains('/') || d.Id.Contains('+') || d.Id.Contains('#') || d.Type is not ("scanner" or "gate"))
-                    throw new ArgumentException("Invalid schedule device");
-                var existingDevice = await devices.GetAsync(d.AirportId, d.Id);
-                if (existingDevice == null) devices.Add(new Device { Id = d.Id, AirportId = d.AirportId, Type = d.Type });
-                else if (!existingDevice.Enabled || existingDevice.Type != d.Type) throw new ConflictException("Schedule device conflicts with registration");
+                throw new ArgumentException("Invalid schedule device");
             }
-            foreach (var f in schedule.Flights)
+
+            var deviceType = ModelValues.ParseDeviceType(deviceUpdate.Type);
+            var existingDevice = await devices.GetAsync(deviceUpdate.AirportId, deviceUpdate.Id);
+            if (existingDevice == null)
             {
-                if (!await airports.IsEnabledAsync(f.Origin) || !await airports.IsEnabledAsync(f.Destination))
-                    throw new ArgumentException("Unknown flight airport");
-                var existing = await flights.GetAsync(f.Id);
-                if (existing != null)
+                devices.Add(new Device
                 {
-                    if (existing.RunId != schedule.SimulationRunId || existing.Number != f.Number || existing.Origin != f.Origin ||
-                        existing.Destination != f.Destination || existing.ScheduledDeparture != f.ScheduledDeparture ||
-                        existing.ScheduledArrival != f.ScheduledArrival)
-                        throw new ConflictException("Flight schedule conflicts with stored identity");
-                    continue;
-                }
-                flights.Add(new Flight
-                {
-                    Id = f.Id,
-                    RunId = schedule.SimulationRunId,
-                    Number = f.Number,
-                    Origin = f.Origin,
-                    Destination = f.Destination,
-                    ScheduledDeparture = f.ScheduledDeparture,
-                    ScheduledArrival = f.ScheduledArrival
+                    Id = deviceUpdate.Id,
+                    AirportId = deviceUpdate.AirportId,
+                    Type = deviceType
                 });
             }
-            await work.SaveChangesAsync();
+            else if (!existingDevice.Enabled || existingDevice.Type != deviceType)
+            {
+                throw new ConflictException("Schedule device conflicts with registration");
+            }
         }
-        finally { gate.Mutex.Release(); }
-        await notifications.Send();
     }
+
+    private async Task RegisterScheduleFlights(FlightSchedule schedule)
+    {
+        foreach (var flightUpdate in schedule.Flights)
+        {
+            if (!await airports.IsEnabledAsync(flightUpdate.Origin) || !await airports.IsEnabledAsync(flightUpdate.Destination))
+            {
+                throw new ArgumentException("Unknown flight airport");
+            }
+
+            var existingFlight = await flights.GetAsync(flightUpdate.Id);
+            if (existingFlight != null)
+            {
+                if (existingFlight.RunId != schedule.SimulationRunId || existingFlight.Number != flightUpdate.Number ||
+                    existingFlight.Origin != flightUpdate.Origin || existingFlight.Destination != flightUpdate.Destination ||
+                    existingFlight.ScheduledDeparture != flightUpdate.ScheduledDeparture ||
+                    existingFlight.ScheduledArrival != flightUpdate.ScheduledArrival)
+                {
+                    throw new ConflictException("Flight schedule conflicts with stored identity");
+                }
+
+                continue;
+            }
+
+            flights.Add(new Flight
+            {
+                Id = flightUpdate.Id,
+                RunId = schedule.SimulationRunId,
+                Number = flightUpdate.Number,
+                Origin = flightUpdate.Origin,
+                Destination = flightUpdate.Destination,
+                ScheduledDeparture = flightUpdate.ScheduledDeparture,
+                ScheduledArrival = flightUpdate.ScheduledArrival
+            });
+        }
+    }
+
     public async Task RecordDeparture(string flightId, FlightDepartureUpdate departure)
     {
-        if (string.IsNullOrWhiteSpace(departure.SimulationRunId) || departure.DepartedAt == default || departure.DepartedAt.Offset != TimeSpan.Zero)
-            throw new ArgumentException("Invalid flight departure");
-        await gate.Mutex.WaitAsync();
+        ValidateDeparture(departure);
+
         try
         {
-            var flight = await flights.GetAsync(flightId);
-            if (flight == null || flight.RunId != departure.SimulationRunId) throw new ArgumentException("Unknown flight/run");
+            await using var transaction = await airports.BeginTransactionAsync();
+            var flight = await GetFlightForRun(flightId, departure.SimulationRunId);
             if (flight.ActualDeparture != null && flight.ActualDeparture != departure.DepartedAt)
+            {
                 throw new ConflictException("Conflicting departure evidence");
+            }
+
             flight.ActualDeparture = departure.DepartedAt;
-            await work.SaveChangesAsync();
+            await airports.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
-        finally { gate.Mutex.Release(); }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConflictException("Flight departure changed concurrently; retry the request");
+        }
+        catch (PersistenceConflictException)
+        {
+            throw new ConflictException("Flight departure changed concurrently; retry the request");
+        }
+
         await notifications.Send();
     }
+
     public async Task RecordArrival(string flightId, FlightArrivalUpdate arrival)
     {
-        if (string.IsNullOrWhiteSpace(arrival.SimulationRunId) || arrival.ArrivedAt == default || arrival.ArrivedAt.Offset != TimeSpan.Zero)
-            throw new ArgumentException("Invalid flight arrival");
-        await gate.Mutex.WaitAsync();
+        ValidateArrival(arrival);
+
         try
         {
-            var flight = await flights.GetAsync(flightId);
-            if (flight == null || flight.RunId != arrival.SimulationRunId) throw new ArgumentException("Unknown flight/run");
+            await using var transaction = await airports.BeginTransactionAsync();
+            var flight = await GetFlightForRun(flightId, arrival.SimulationRunId);
             if (flight.ActualDeparture == null || arrival.ArrivedAt < flight.ActualDeparture)
+            {
                 throw new ArgumentException("Flight arrival requires a preceding departure");
+            }
+
             if (flight.ActualArrival != null && flight.ActualArrival != arrival.ArrivedAt)
+            {
                 throw new ConflictException("Conflicting arrival evidence");
+            }
+
             flight.ActualArrival = arrival.ArrivedAt;
-            await work.SaveChangesAsync();
+            await airports.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
-        finally { gate.Mutex.Release(); }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConflictException("Flight arrival changed concurrently; retry the request");
+        }
+        catch (PersistenceConflictException)
+        {
+            throw new ConflictException("Flight arrival changed concurrently; retry the request");
+        }
+
         await notifications.Send();
+    }
+
+    private async Task<Flight> GetFlightForRun(string flightId, string runId)
+    {
+        var flight = await flights.GetAsync(flightId);
+        if (flight == null || flight.RunId != runId)
+        {
+            throw new ArgumentException("Unknown flight/run");
+        }
+
+        return flight;
+    }
+
+    private static void ValidateDeparture(FlightDepartureUpdate departure)
+    {
+        if (string.IsNullOrWhiteSpace(departure.SimulationRunId) || departure.DepartedAt == default ||
+            departure.DepartedAt.Offset != TimeSpan.Zero)
+        {
+            throw new ArgumentException("Invalid flight departure");
+        }
+    }
+
+    private static void ValidateArrival(FlightArrivalUpdate arrival)
+    {
+        if (string.IsNullOrWhiteSpace(arrival.SimulationRunId) || arrival.ArrivedAt == default ||
+            arrival.ArrivedAt.Offset != TimeSpan.Zero)
+        {
+            throw new ArgumentException("Invalid flight arrival");
+        }
     }
 }

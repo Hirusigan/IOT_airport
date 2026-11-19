@@ -10,11 +10,13 @@ public sealed class MqttEventPublisher : IMqttEventPublisher
     {
         var factory = new MqttFactory();
         using var client = factory.CreateMqttClient();
+        
         var options = new MqttClientOptionsBuilder()
             .WithClientId($"device-{Guid.NewGuid():N}")
             .WithTcpServer(host, port)
             .Build();
         await client.ConnectAsync(options, token);
+
         try
         {
             var message = new MqttApplicationMessageBuilder()
@@ -27,7 +29,8 @@ public sealed class MqttEventPublisher : IMqttEventPublisher
         }
         finally
         {
-            if (client.IsConnected) await client.DisconnectAsync();
+            if (client.IsConnected)
+                await client.DisconnectAsync();
         }
     }
 }

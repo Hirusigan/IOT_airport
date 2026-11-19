@@ -1,6 +1,5 @@
 namespace Luggage;
 
-// Preserve the existing database and HTTP contract while using enums internally.
 public static class AlertValues
 {
     public static string ToValue(this AlertType type) => type switch

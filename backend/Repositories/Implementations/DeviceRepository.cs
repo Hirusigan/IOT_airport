@@ -1,6 +1,6 @@
 namespace Luggage;
 
-public class DeviceRepository(TrackingDbContext db) : BaseRepository<Device>(db), IDeviceRepository
+public class DeviceRepository(TrackingDbContext db) : Repository<Device>(db), IDeviceRepository
 {
-    public Task<Device?> GetAsync(string airportId, string id) => FindAsync(airportId, id);
+    public Task<Device?> GetAsync(string airportId, string id) => GetByIdAsync(airportId, id);
 }

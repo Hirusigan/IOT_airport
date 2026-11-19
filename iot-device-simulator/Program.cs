@@ -13,7 +13,19 @@ app.MapPost("/devices/actions", async (DeviceActionCommand command, IDeviceSimul
         await simulator.Execute(command, token);
         return Results.Accepted();
     }
-    catch (ArgumentException e) { return Results.BadRequest(new { error = e.Message }); }
-    catch (InvalidOperationException e) { return Results.BadRequest(new { error = e.Message }); }
+    catch (ArgumentException e)
+    {
+        return Results.BadRequest(new
+        {
+            error = e.Message
+        });
+    }
+    catch (InvalidOperationException e)
+    {
+        return Results.BadRequest(new
+        {
+            error = e.Message
+        });
+    }
 });
 app.Run();

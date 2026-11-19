@@ -61,7 +61,7 @@ Watchtower runs from your separate Compose file. Only the backend, frontend, and
 
 ## Development notes
 
-The backend uses .NET 10, PostgreSQL, MQTTnet, and Docker.DotNet. The Airport Simulation and IoT Device Simulator are separate .NET 10 ASP.NET Core applications. Scenario definitions remain in `simulation/scenarios`; the old C++ publisher and Docker Bake setup are removed from the runtime/build workflow.
+The backend uses .NET 10, PostgreSQL, MQTTnet, and Docker.DotNet. The Airport Simulation and IoT Device Simulator are separate .NET 10 ASP.NET Core applications. Scenario definitions are stored in `scenarios`; the old C++ publisher and Docker Bake setup are removed from the runtime/build workflow.
 
 - [Backend architecture](docs/backend-architecture.md)
 - [Frontend architecture](docs/frontend-architecture.md)

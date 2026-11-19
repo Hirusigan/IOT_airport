@@ -7,6 +7,6 @@ public static class RuleDecisions
         !Loaded(a, f) && f.ActualDeparture == null && now >= f.ScheduledDeparture.AddSeconds(-settings.LoadingCutoffSeconds);
     public static bool Missed(Assignment a, Flight f, DateTimeOffset now, RuleSettings settings) =>
         !Loaded(a, f) && f.ActualDeparture is { } departure && now >= departure.AddSeconds(settings.GraceSeconds);
-    public static bool Unexpected(string airport, string stage, DateTimeOffset at, Flight flight) =>
-        stage == "arrived" ? airport != flight.Destination || at < (flight.ActualDeparture ?? flight.ScheduledDeparture) : airport != flight.Origin;
+    public static bool Unexpected(string airport, LuggageStage stage, DateTimeOffset at, Flight flight) =>
+        stage == LuggageStage.Arrived ? airport != flight.Destination || at < (flight.ActualDeparture ?? flight.ScheduledDeparture) : airport != flight.Origin;
 }

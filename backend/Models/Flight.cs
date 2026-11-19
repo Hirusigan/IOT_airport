@@ -2,13 +2,25 @@ namespace Luggage;
 
 public class Flight
 {
-    public string Id { get; set; } = "";
-    public string RunId { get; set; } = "";
-    public string Number { get; set; } = "";
-    public string Origin { get; set; } = "";
-    public string Destination { get; set; } = "";
-    public DateTimeOffset ScheduledDeparture { get; set; }
-    public DateTimeOffset? ActualDeparture { get; set; }
-    public DateTimeOffset? ScheduledArrival { get; set; }
-    public DateTimeOffset? ActualArrival { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string RunId { get; set; } = string.Empty;
+    public string Number { get; set; } = string.Empty;
+    public string Origin { get; set; } = string.Empty;
+    public string Destination { get; set; } = string.Empty;
+    public DateTimeOffset ScheduledDeparture
+    {
+        get; set;
+    }
+    public DateTimeOffset? ActualDeparture
+    {
+        get; set;
+    }
+    public DateTimeOffset? ScheduledArrival
+    {
+        get; set;
+    }
+    public DateTimeOffset? ActualArrival
+    {
+        get; set;
+    }
 }

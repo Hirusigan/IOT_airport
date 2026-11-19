@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 namespace Luggage;
 
-public class EventRepository : BaseRepository<Observation>, IEventRepository
+public class EventRepository : Repository<Observation>, IEventRepository
 {
     private readonly TrackingDbContext db;
     public EventRepository(TrackingDbContext db) : base(db) { this.db = db; }

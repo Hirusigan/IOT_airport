@@ -1,3 +1,6 @@
 namespace Luggage;
 
-public class RetiredRun { public string Id { get; set; } = ""; }
+public class RetiredRun
+{
+    public string Id { get; set; } = string.Empty;
+}

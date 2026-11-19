@@ -7,6 +7,6 @@ RUN dotnet publish -c Release -o /out --no-restore
 FROM mcr.microsoft.com/dotnet/aspnet:10.0.0
 WORKDIR /app
 COPY --from=build /out .
-COPY simulation/scenarios ./scenarios
+COPY scenarios ./scenarios
 ENV ASPNETCORE_URLS=http://+:8080
 ENTRYPOINT ["dotnet", "AirportSimulation.dll"]

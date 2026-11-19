@@ -7,6 +7,7 @@ public class SignalRDashboardNotifier(IHubContext<DashboardHub> hub) : IDashboar
     {
         await hub.Clients.All.SendAsync("AirportStatusChanged");
         await hub.Clients.All.SendAsync("AlertChanged");
-        if (journeyId != null) await hub.Clients.All.SendAsync("LuggageUpdated", journeyId);
+        if (journeyId != null)
+            await hub.Clients.All.SendAsync("LuggageUpdated", journeyId);
     }
 }

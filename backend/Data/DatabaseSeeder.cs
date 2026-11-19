@@ -10,13 +10,14 @@ public static class DatabaseSeeder
             new Airport { Id = "CPH", Name = "Copenhagen Airport", Latitude = 55.618, Longitude = 12.656 }
         };
         foreach (var airport in defaults)
-            if (!await db.Airports.AnyAsync(x => x.Id == airport.Id)) db.Airports.Add(airport);
+            if (!await db.Airports.AnyAsync(x => x.Id == airport.Id))
+                db.Airports.Add(airport);
         foreach (var id in new[] { "AAR", "CPH" })
         {
             if (!await db.Devices.AnyAsync(x => x.AirportId == id && x.Id == "scanner-001"))
-                db.Devices.Add(new Device { Id = "scanner-001", AirportId = id, Type = "scanner" });
+                db.Devices.Add(new Device { Id = "scanner-001", AirportId = id, Type = DeviceType.Scanner });
             if (!await db.Devices.AnyAsync(x => x.AirportId == id && x.Id == "gate-01"))
-                db.Devices.Add(new Device { Id = "gate-01", AirportId = id, Type = "gate" });
+                db.Devices.Add(new Device { Id = "gate-01", AirportId = id, Type = DeviceType.Gate });
         }
         await db.SaveChangesAsync();
     }
