@@ -76,7 +76,6 @@ services:
       retries: 20
   backend:
     image: andreasfrost1004/luggagetracker-backend:latest
-    build: { context: ., dockerfile: backend/Dockerfile }
     restart: unless-stopped
     environment:
       ConnectionStrings__Database: Host=postgres;Database=luggage;Username=luggage;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
@@ -103,14 +102,8 @@ services:
       airport-simulation: { condition: service_started }
     labels:
       com.centurylinklabs.watchtower.enable: "true"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
   airport-simulation:
     image: andreasfrost1004/luggagetracker-airport-simulation:latest
-    build: { context: ., dockerfile: airport-simulation/Dockerfile }
     restart: unless-stopped
     environment:
       BackendUrl: http://backend:8080
@@ -122,25 +115,19 @@ services:
       com.centurylinklabs.watchtower.enable: "true"
   iot-device-simulator:
     image: andreasfrost1004/luggagetracker-iot-device-simulator:latest
-    build: { context: ., dockerfile: iot-device-simulator/Dockerfile }
     restart: unless-stopped
     networks: [default, airport-brokers]
     labels:
       com.centurylinklabs.watchtower.enable: "true"
   frontend:
     image: andreasfrost1004/luggagetracker-frontend:latest
-    build: ./frontend
     restart: unless-stopped
     networks: [default, ingress]
-    depends_on:
-      backend: { condition: service_healthy }
     labels:
       com.centurylinklabs.watchtower.enable: "true"
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/"]
-      interval: 10s
-      timeout: 3s
-      retries: 10
+    ports:
+      - "8081:80"  
+
 networks:
   ingress:
     external: true
