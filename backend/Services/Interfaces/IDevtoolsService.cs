@@ -11,5 +11,4 @@ public interface IDevtoolsService
     Task Stop();
     Task Clear();
     Task Seed();
-    Task<bool> SeedAirport(string airportId);
 }

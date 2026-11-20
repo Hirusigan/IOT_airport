@@ -1,7 +1,10 @@
+import { FiSend } from 'react-icons/fi';
 import type { AirportDetails } from '../types/AirportDetails';
 import { formatDateTime as time } from '../helpers/formatDateTime';
 import { AlertList } from './AlertList';
 import './styles/Dashboard.css';
+import './styles/AirportDetailsPanel.css';
+
 export function AirportDetailsPanel({
   id,
   details,
@@ -14,7 +17,7 @@ export function AirportDetailsPanel({
   close: () => void;
 }) {
   return (
-    <section className="panel">
+    <section className="panel airport-details">
       <div className="panel-heading">
         <h2>{details?.airport.name ?? id}</h2>
         <button
@@ -34,45 +37,110 @@ export function AirportDetailsPanel({
           </svg>
         </button>
       </div>
-      {error && <p role="alert">{error} Retrying automatically.</p>}
+
+      {error && (
+        <p className="airport-details-error" role="alert">
+          {error} Retrying automatically.
+        </p>
+      )}
+
       {details ? (
         <>
-          <h3>Flights</h3>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Flight</th>
-                  <th>Route</th>
-                  <th>Scheduled</th>
-                  <th>Actual departure</th>
-                  <th>Scheduled arrival</th>
-                  <th>Actual arrival</th>
-                </tr>
-              </thead>
-              <tbody>
-                {details.flights.map((f) => (
-                  <tr key={f.id}>
-                    <td>{f.number}</td>
-                    <td>
-                      {f.origin} → {f.destination}
-                    </td>
-                    <td>{time(f.scheduledDeparture)}</td>
-                    <td>
-                      {f.actualDeparture ? time(f.actualDeparture) : 'Pending'}
-                    </td>
-                    <td>{f.scheduledArrival ? time(f.scheduledArrival) : 'Not scheduled'}</td>
-                    <td>{f.actualArrival ? time(f.actualArrival) : 'Pending'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="airport-details-section">
+            <div className="airport-details-subheading">
+              <h3>Flights</h3>
+              <span className="airport-details-count">
+                {details.flights.length}
+              </span>
+            </div>
+
+            {details.flights.length ? (
+              <div className="flight-table-wrap">
+                <table className="flight-table">
+                  <thead>
+                    <tr>
+                      <th>Flight</th>
+                      <th>Route</th>
+                      <th>Scheduled</th>
+                      <th>Actual departure</th>
+                      <th>Scheduled arrival</th>
+                      <th>Actual arrival</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {details.flights.map((f) => (
+                      <tr key={f.id}>
+                        <td className="flight-number">{f.number}</td>
+                        <td>
+                          <span className="flight-route">
+                            <span className="flight-airport">{f.origin}</span>
+                            <span className="flight-arrow" aria-hidden="true">
+                              →
+                            </span>
+                            <span className="flight-airport">
+                              {f.destination}
+                            </span>
+                          </span>
+                        </td>
+                        <td className="flight-time">
+                          {time(f.scheduledDeparture)}
+                        </td>
+                        <td>
+                          {f.actualDeparture ? (
+                            <span className="flight-time">
+                              {time(f.actualDeparture)}
+                            </span>
+                          ) : (
+                            <span className="flight-pill pending">Pending</span>
+                          )}
+                        </td>
+                        <td>
+                          {f.scheduledArrival ? (
+                            <span className="flight-time">
+                              {time(f.scheduledArrival)}
+                            </span>
+                          ) : (
+                            <span className="flight-pill muted">
+                              Not scheduled
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          {f.actualArrival ? (
+                            <span className="flight-time">
+                              {time(f.actualArrival)}
+                            </span>
+                          ) : (
+                            <span className="flight-pill pending">Pending</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="flight-empty">
+                <FiSend aria-hidden="true" />
+                <p>No flights recorded for this airport.</p>
+              </div>
+            )}
           </div>
-          <h3>Alert history</h3>
-          <AlertList alerts={details.alerts} />
+
+          <div className="airport-details-section">
+            <div className="airport-details-subheading">
+              <h3>Alert history</h3>
+              <span className="airport-details-count">
+                {details.alerts.length}
+              </span>
+            </div>
+            <AlertList alerts={details.alerts} />
+          </div>
         </>
       ) : (
-        !error && <p>Loading airport details…</p>
+        !error && (
+          <p className="airport-details-loading">Loading airport details…</p>
+        )
       )}
     </section>
   );

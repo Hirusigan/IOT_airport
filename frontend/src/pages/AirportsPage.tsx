@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type SubmitEvent } from 'react';
 import { airportService } from '../services/airportService';
 import { requestError } from '../services/apiClient';
 import './styles/AirportsPage.css';
@@ -27,7 +27,7 @@ export function AirportsPage() {
     };
   }
 
-  async function submit(event: FormEvent) {
+  async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setStatus({ type: 'idle', text: '' });
@@ -66,7 +66,6 @@ export function AirportsPage() {
           Airport code
           <input
             id="airport-code"
-            required
             maxLength={3}
             pattern="[A-Za-z]{3}"
             placeholder="e.g. BLL"

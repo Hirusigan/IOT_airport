@@ -10,14 +10,11 @@ import {
   FiTrash2,
   FiX,
 } from 'react-icons/fi';
-import { FaMapLocationDot } from "react-icons/fa6";
-
 
 export function DevtoolsPage() {
   const { scenarios, status, error, busy, message, execute } = useDevtools();
-  const { airports, setSelected, setSearched } = useDashboard();
+  const { setSelected, setSearched } = useDashboard();
   const [scenario, setScenario] = useState('mixed');
-  const [airportId, setAirportId] = useState('');
   const [confirm, setConfirm] = useState(false);
 
   const running = status?.state === 'Starting' || status?.state === 'Running';
@@ -69,7 +66,7 @@ export function DevtoolsPage() {
 
           <button
             className="devtools-btn warning"
-            disabled={!running || (busy && status?.state !== 'Starting')}
+            disabled={!running || busy}
             onClick={() => {
               void execute(
                 devtoolsService.stop,
@@ -96,46 +93,6 @@ export function DevtoolsPage() {
             {status.error && <p role="alert">{status.error}</p>}
           </div>
         )}
-      </section>
-
-      <section className="panel">
-        <h2>Seed airport</h2>
-        <p className="panel-subtitle">
-          Add default devices to a specific airport.
-        </p>
-
-        <div className="devtools-row">
-          <div className="devtools-field">
-            <label htmlFor="seed-airport">Airport</label>
-            <select
-              id="seed-airport"
-              value={airportId}
-              disabled={busy || !airports.length}
-              onChange={(e) => setAirportId(e.target.value)}
-            >
-              <option value="">Choose an airport</option>
-              {airports.map((airport) => (
-                <option key={airport.id} value={airport.id}>
-                  {airport.id} · {airport.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            className="devtools-btn accent"
-            disabled={busy || !status || !airportId}
-            onClick={() => {
-              void execute(
-                () => devtoolsService.seedAirport(airportId),
-                `Default devices are ready for ${airportId}.`,
-              );
-            }}
-          >
-            <FaMapLocationDot aria-hidden="true" focusable="false" />
-            Seed selected airport
-          </button>
-        </div>
       </section>
 
       <section className="panel">
@@ -187,7 +144,6 @@ export function DevtoolsPage() {
                     await devtoolsService.clear();
                     setSelected(null);
                     setSearched('');
-                    setAirportId('');
                     setConfirm(false);
                   }, 'Database cleared.');
                 }}

@@ -4,7 +4,9 @@ namespace Luggage;
 
 public sealed class SimulationRunner(
     IHttpClientFactory clients,
-    IConfiguration config) : BackgroundService, ISimulationRunner
+    IConfiguration config,
+    IDashboardNotifier notifications,
+    ILogger<SimulationRunner> logger) : BackgroundService, ISimulationRunner
 {
     private const string StatusPath = "/simulation/status";
     private const string InterruptedError = "Backend restarted during simulation.";
@@ -55,7 +57,7 @@ public sealed class SimulationRunner(
 
         var remote = await response.Content.ReadFromJsonAsync<SimulationStatusDTO>()
             ?? new SimulationStatusDTO(SimulationState.Starting, scenarioId);
-        Update(remote);
+        await Update(remote);
         StartPolling(stoppingToken);
     }
 
@@ -66,15 +68,15 @@ public sealed class SimulationRunner(
         response.EnsureSuccessStatusCode();
 
         var remote = await response.Content.ReadFromJsonAsync<SimulationStatusDTO>();
-        if (remote != null)
-        {
-            Update(remote);
-        }
-
         pollingCancellation?.Cancel();
         if (polling != null)
         {
             await polling;
+        }
+
+        if (remote != null)
+        {
+            await Update(remote);
         }
     }
 
@@ -105,8 +107,9 @@ public sealed class SimulationRunner(
         return client;
     }
 
-    private void Update(SimulationStatusDTO value)
+    private async Task Update(SimulationStatusDTO value)
     {
+        var changed = status != value;
         status = value;
         try
         {
@@ -117,6 +120,18 @@ public sealed class SimulationRunner(
         catch (IOException)
         {
             // Persisted status is only used to recover the display state after restart.
+        }
+
+        if (changed)
+        {
+            try
+            {
+                await notifications.SendSimulationStatus(value);
+            }
+            catch (Exception exception)
+            {
+                logger.LogWarning(exception, "Could not broadcast simulation status");
+            }
         }
     }
 
@@ -137,7 +152,7 @@ public sealed class SimulationRunner(
                 var remote = await client.GetFromJsonAsync<SimulationStatusDTO>(StatusPath, token);
                 if (remote != null)
                 {
-                    Update(remote);
+                    await Update(remote);
                     if (IsFinished(remote.State))
                     {
                         return;
@@ -152,7 +167,7 @@ public sealed class SimulationRunner(
         }
         catch (Exception exception)
         {
-            Update(Status with
+            await Update(Status with
             {
                 State = SimulationState.Failed,
                 Error = exception.Message
@@ -170,7 +185,7 @@ public sealed class SimulationRunner(
 
         if (!IsActive(saved.State))
         {
-            Update(saved);
+            await Update(saved);
             return;
         }
 
@@ -181,7 +196,7 @@ public sealed class SimulationRunner(
             var remote = await client.GetFromJsonAsync<SimulationStatusDTO>(StatusPath, stoppingToken);
             if (remote != null && IsActive(remote.State))
             {
-                Update(remote);
+                await Update(remote);
                 StartPolling(stoppingToken);
                 return;
             }
@@ -191,7 +206,7 @@ public sealed class SimulationRunner(
             // If the remote simulation cannot be queried, mark the saved run interrupted below.
         }
 
-        Update(saved with
+        await Update(saved with
         {
             State = SimulationState.Interrupted,
             Error = InterruptedError

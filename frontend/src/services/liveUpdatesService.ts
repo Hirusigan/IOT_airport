@@ -1,9 +1,11 @@
 import { HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 import type { ConnectionStatus } from '../types/ConnectionStatus';
+import type { SimulationStatus } from '../types/SimulationStatus';
 
 export function startLiveUpdates(
   refresh: () => void,
   status: (value: ConnectionStatus) => void,
+  simulationStatus: (value: SimulationStatus) => void,
 ) {
   let disposed = false;
   const connection = new HubConnectionBuilder()
@@ -16,6 +18,7 @@ export function startLiveUpdates(
     'LuggageUpdated',
   ])
     connection.on(event, refresh);
+  connection.on('SimulationStatusChanged', simulationStatus);
   connection.onreconnecting(() => {
     if (!disposed) status('Reconnecting');
   });
@@ -45,13 +48,15 @@ export function startLiveUpdates(
   };
   refresh();
   void connect();
-  const poll = window.setInterval(() => {
-    refresh();
-    void connect();
+  const retry = window.setInterval(() => {
+    if (connection.state !== HubConnectionState.Connected) {
+      refresh();
+      void connect();
+    }
   }, 10000);
   return () => {
     disposed = true;
-    clearInterval(poll);
+    clearInterval(retry);
     void connection.stop();
   };
 }

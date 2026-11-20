@@ -23,3 +23,7 @@
   outline: none;
   box-shadow: none;
 }
+
+.search .primary:hover:not(:disabled) {
+  background-color: #15635f;
+}

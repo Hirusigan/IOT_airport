@@ -10,4 +10,7 @@ public class SignalRDashboardNotifier(IHubContext<DashboardHub> hub) : IDashboar
         if (journeyId != null)
             await hub.Clients.All.SendAsync("LuggageUpdated", journeyId);
     }
+
+    public Task SendSimulationStatus(SimulationStatusDTO status) =>
+        hub.Clients.All.SendAsync("SimulationStatusChanged", status);
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { airportService } from '../services/airportService';
 import { isCanceled, requestError } from '../services/apiClient';
 import type { AirportDetails } from '../types/AirportDetails';
+
 export function useAirportDetails(id: string | null, revision: number) {
   const [result, setResult] = useState<{
     id: string;

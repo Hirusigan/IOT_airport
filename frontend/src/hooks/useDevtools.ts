@@ -2,13 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { devtoolsService } from '../services/devtoolsService';
 import { isCanceled, requestError } from '../services/apiClient';
 import type { Scenario } from '../types/Scenario';
-import type { SimulationStatus } from '../types/SimulationStatus';
+import { useDashboard } from '../context/DashboardProvider';
 
 export function useDevtools() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
-  const [status, setStatus] = useState<SimulationStatus | null>(null);
+  const {
+    simulationStatus: status,
+    setSimulationStatus: setStatus,
+  } = useDashboard();
   const [error, setError] = useState('');
-  const [pollError, setPollError] = useState('');
+  const [loadError, setLoadError] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const mounted = useRef(false);
@@ -17,36 +20,25 @@ export function useDevtools() {
   useEffect(() => {
     mounted.current = true;
     const controller = new AbortController();
-    let polling = false;
-    const poll = async () => {
-      if (polling) return;
-      polling = true;
-      const currentActionId = actionId.current;
-      try {
-        const [available, result] = await Promise.all([
-          devtoolsService.scenarios(controller.signal),
-          devtoolsService.status(controller.signal),
-        ]);
+    const currentActionId = actionId.current;
+    void Promise.all([
+      devtoolsService.scenarios(controller.signal),
+      devtoolsService.status(controller.signal),
+    ])
+      .then(([available, result]) => {
         if (!controller.signal.aborted && currentActionId === actionId.current) {
           setScenarios(available);
           setStatus(result);
-          setPollError('');
+          setLoadError('');
         }
-      } catch (e) {
+      })
+      .catch((e) => {
         if (!isCanceled(e) && !controller.signal.aborted)
-          setPollError(requestError(e));
-      } finally {
-        polling = false;
-      }
-    };
-    void poll();
-    const timer = window.setInterval(() => {
-      void poll();
-    }, 1000);
+          setLoadError(requestError(e));
+      });
     return () => {
       mounted.current = false;
       controller.abort();
-      clearInterval(timer);
     };
   }, []);
   const execute = useCallback(
@@ -76,7 +68,7 @@ export function useDevtools() {
   return {
     scenarios,
     status,
-    error: error || pollError,
+    error: error || loadError,
     busy,
     message,
     execute,

@@ -80,8 +80,18 @@
   transition: filter 0.15s ease, opacity 0.15s ease;
 }
 
+.devtools-btn svg {
+  fill: currentColor;
+  fill-opacity: 0;
+  transition: fill-opacity 0.15s ease;
+}
+
 .devtools-btn:hover:not(:disabled) {
-  filter: brightness(0.95);
+  filter: brightness(0.86);
+}
+
+.devtools-btn:hover:not(:disabled) svg {
+  fill-opacity: 0.50;
 }
 
 .devtools-btn:disabled {
@@ -91,23 +101,24 @@
 
 /* Color variants */
 .devtools-btn.primary {
-  background: #175c4c;
+  background: #67c2a3;
   color: #ffffff;
+  border-radius: 10px;
 }
 
 .devtools-btn.accent {
   background: #67c2a3;
-  color: #0f2e26;
+  color: #ffffff;
 }
 
 .devtools-btn.warning {
-  background: #e6be53;
-  color: #2b2106;
+  background: #ea4949;
+  color: #ffffff;
 }
 
 .devtools-btn.danger {
-  background: #e57a67;
-  color: #2b0f0a;
+  background: #ea4949;
+  color: #ffffff;
 }
 
 .devtools-btn.neutral {

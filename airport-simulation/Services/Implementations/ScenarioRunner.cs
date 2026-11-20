@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.Hosting;
 
 namespace AirportSimulation;
 
@@ -8,7 +9,7 @@ public sealed record SimStatus(string State, string? ScenarioId = null, string? 
     DateTimeOffset? StartedAt = null, int PublishedEvents = 0, int TotalEvents = 0, string? Error = null);
 
 public sealed class ScenarioRunner(ISimulationBackendClient backend, IDeviceCommandClient devices,
-    IConfiguration config) : IScenarioRunner
+    IConfiguration config, IHostApplicationLifetime lifetime) : IScenarioRunner
 {
     public IReadOnlyList<ScenarioInfo> Scenarios
     {
@@ -20,7 +21,7 @@ public sealed class ScenarioRunner(ISimulationBackendClient backend, IDeviceComm
         new("missed", "Missed flight", "A bag is never loaded: warning followed by a missed-flight alert."),
         new("wrong-flight", "Wrong flight", "A bag is loaded onto the wrong flight."),
         new("unexpected-airport", "Unexpected airport", "A bag is scanned at the wrong airport.")];
-    CancellationTokenSource? cancellation;
+    TaskCompletionSource<bool>? stopRequested;
     Task? running;
     SimStatus status = new("Idle");
 
@@ -31,11 +32,34 @@ public sealed class ScenarioRunner(ISimulationBackendClient backend, IDeviceComm
         status = value;
     }
 
-    static async Task WaitUntil(DateTimeOffset target, CancellationToken token)
+    static async Task<bool> WaitUntil(DateTimeOffset target, Task stopSignal, CancellationToken token)
     {
+        if (stopSignal.IsCompleted)
+            return false;
+
         var delay = target - DateTimeOffset.UtcNow;
-        if (delay > TimeSpan.Zero)
-            await Task.Delay(delay, token);
+        if (delay <= TimeSpan.Zero)
+            return !stopSignal.IsCompleted;
+
+        using var delayCancellation = CancellationTokenSource.CreateLinkedTokenSource(token);
+        var wait = Task.Delay(delay, delayCancellation.Token);
+        var completed = await Task.WhenAny(wait, stopSignal);
+        if (completed == stopSignal)
+        {
+            delayCancellation.Cancel();
+            try
+            {
+                await wait;
+            }
+            catch (OperationCanceledException) when (!token.IsCancellationRequested)
+            {
+            }
+
+            return false;
+        }
+
+        await wait;
+        return !stopSignal.IsCompleted;
     }
 
     public Task Start(string id)
@@ -47,24 +71,30 @@ public sealed class ScenarioRunner(ISimulationBackendClient backend, IDeviceComm
             throw new InvalidOperationException("A simulation is already running");
         }
 
-        cancellation = new CancellationTokenSource();
+        stopRequested = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         Set(new("Starting", id, StartedAt: DateTimeOffset.UtcNow));
-        running = Run(id, cancellation.Token);
+        running = Run(id, stopRequested.Task, lifetime.ApplicationStopping);
         return Task.CompletedTask;
     }
 
     public async Task Stop()
     {
-        cancellation?.Cancel();
+        stopRequested?.TrySetResult(true);
         if (running != null)
             await running;
     }
 
-    private async Task Run(string id, CancellationToken token)
+    private async Task Run(string id, Task stopSignal, CancellationToken token)
     {
         try
         {
             using var scenario = await LoadScenario(id, token);
+            if (stopSignal.IsCompleted)
+            {
+                Set(Status with { State = "Stopped" });
+                return;
+            }
+
             var root = scenario.RootElement;
             var runId = Guid.NewGuid().ToString();
             var start = DateTimeOffset.UtcNow.AddSeconds(15);
@@ -75,10 +105,14 @@ public sealed class ScenarioRunner(ISimulationBackendClient backend, IDeviceComm
 
             var events = root.GetProperty("events").EnumerateArray().ToArray();
             Set(new("Running", id, runId, Status.StartedAt, 0, events.Length));
-            await WaitUntil(start, token);
+            if (!await WaitUntil(start, stopSignal, token))
+            {
+                Set(Status with { State = "Stopped" });
+                return;
+            }
 
-            await ExecuteActions(root, events, airports, runId, start, token);
-            Set(Status with { State = "Completed" });
+            var completed = await ExecuteActions(root, events, airports, runId, start, stopSignal, token);
+            Set(Status with { State = completed ? "Completed" : "Stopped" });
         }
         catch (OperationCanceledException)
         {
@@ -141,28 +175,37 @@ public sealed class ScenarioRunner(ISimulationBackendClient backend, IDeviceComm
             arrival);
     }
 
-    private async Task ExecuteActions(
+    private async Task<bool> ExecuteActions(
         JsonElement root,
         JsonElement[] events,
         JsonElement[] airports,
         string runId,
         DateTimeOffset start,
+        Task stopSignal,
         CancellationToken token)
     {
         foreach (var action in CreateActions(root, events, runId))
         {
-            await WaitUntil(start.AddSeconds(action.Time), token);
+            if (stopSignal.IsCompleted || !await WaitUntil(start.AddSeconds(action.Time), stopSignal, token))
+                return false;
+
             if (action.FlightId is { } flightId)
             {
                 await backend.RecordArrival(
                     flightId,
                     new FlightArrivalRequest(runId, DateTimeOffset.UtcNow),
                     token);
-                continue;
+            }
+            else
+            {
+                await ExecuteDeviceEvent(root, airports, action.Event!.Value, runId, token);
             }
 
-            await ExecuteDeviceEvent(root, airports, action.Event!.Value, runId, token);
+            if (stopSignal.IsCompleted)
+                return false;
         }
+
+        return true;
     }
 
     private static IOrderedEnumerable<ScheduledAction> CreateActions(

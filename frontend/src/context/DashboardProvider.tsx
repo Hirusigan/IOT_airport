@@ -14,6 +14,7 @@ import type { Airport } from '../types/Airport';
 import type { Alert } from '../types/Alert';
 import type { Statistics } from '../types/Statistics';
 import type { ConnectionStatus } from '../types/ConnectionStatus';
+import type { SimulationStatus } from '../types/SimulationStatus';
 
 function useDashboardState() {
   const [airports, setAirports] = useState<Airport[]>([]);
@@ -26,6 +27,8 @@ function useDashboardState() {
   const [query, setQuery] = useState('');
   const [searched, setSearched] = useState('');
   const [activeOnly, setActiveOnly] = useState(true);
+  const [simulationStatus, setSimulationStatus] =
+    useState<SimulationStatus | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -55,7 +58,7 @@ function useDashboardState() {
     };
     const stop = startLiveUpdates(() => {
       void refresh();
-    }, setLive);
+    }, setLive, setSimulationStatus);
     return () => {
       controller.abort();
       stop();
@@ -76,6 +79,8 @@ function useDashboardState() {
     setSearched,
     activeOnly,
     setActiveOnly,
+    simulationStatus,
+    setSimulationStatus,
   };
 }
 const DashboardContext = createContext<ReturnType<

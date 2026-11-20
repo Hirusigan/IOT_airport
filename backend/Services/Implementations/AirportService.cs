@@ -11,7 +11,8 @@ public class AirportService(
     RuleSettings settings,
     IDashboardNotifier notifications,
     TimeProvider clock,
-    IAirportBrokerProvisioner brokers) : IAirportService
+    IAirportBrokerProvisioner brokers,
+    TrackingDbContext db) : IAirportService
 {
     private async Task<AirportDTO> View(Airport airport)
     {
@@ -81,6 +82,11 @@ public class AirportService(
 
             airports.Add(airport);
             await airports.SaveChangesAsync();
+            if (!await DatabaseSeeder.SeedAirportAsync(db, airport.Id))
+            {
+                throw new InvalidOperationException($"Could not seed devices for airport {airport.Id}");
+            }
+
             await transaction.CommitAsync();
         }
         catch (PersistenceConflictException)
