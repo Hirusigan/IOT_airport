@@ -24,6 +24,102 @@ Airport records AAR and CPH and their default scanner/gate devices are seeded at
 
 Simulation status includes `Idle`, `Starting`, `Running`, `Completed`, `Stopped`, `Failed`, and `Interrupted`, along with event progress. Stop finishes the action currently in progress, then stops before the next scheduled action. If the simulation is waiting for a future action, it stops during that wait. Events and data from completed actions remain stored. Starting again begins the selected scenario from the beginning with a new run ID; it does not clear previous run data. The backend broadcasts status changes through SignalR, and Devtools uses the initial status response plus live updates. Backend status is persisted in `simulation-runs`.
 
+## Architecture diagrams
+
+The class diagram shows the main control and event-processing classes. The two runners have similar names but live in different applications: `SimulationRunner` is in the backend, and `ScenarioRunner` is in Airport Simulation.
+
+```mermaid
+classDiagram
+    direction LR
+
+    class DevtoolsController
+    class IDevtoolsService
+    class DevtoolsService
+    class ISimulationRunner
+    class SimulationRunner
+    class ScenarioRunner
+    class ISimulationBackendClient
+    class SimulationBackendClient
+    class IDeviceCommandClient
+    class DeviceCommandClient
+    class DeviceSimulator
+    class IMqttEventPublisher
+    class MqttIngestion
+    class IEventProcessingService
+    class EventProcessingService
+    class IDashboardNotifier
+    class SignalRDashboardNotifier
+    class DashboardHub
+
+    DevtoolsController --> IDevtoolsService
+    DevtoolsService ..|> IDevtoolsService
+    DevtoolsService --> ISimulationRunner
+    SimulationRunner ..|> ISimulationRunner
+    SimulationRunner ..> ScenarioRunner : HTTP control and status
+    ScenarioRunner ..> ISimulationBackendClient
+    SimulationBackendClient ..|> ISimulationBackendClient
+    ScenarioRunner ..> IDeviceCommandClient
+    DeviceCommandClient ..|> IDeviceCommandClient
+    DeviceCommandClient ..> DeviceSimulator : HTTP device action
+    DeviceSimulator --> IMqttEventPublisher
+    MqttIngestion ..> IEventProcessingService
+    EventProcessingService ..|> IEventProcessingService
+    EventProcessingService ..> IDashboardNotifier
+    SignalRDashboardNotifier ..|> IDashboardNotifier
+    SignalRDashboardNotifier ..> DashboardHub : broadcasts updates
+    SimulationRunner ..> IDashboardNotifier : broadcasts status
+
+    note for SimulationRunner "Backend"
+    note for ScenarioRunner "Airport Simulation"
+    note for DeviceSimulator "IoT Device Simulator"
+```
+
+This sequence follows one scenario start through a luggage check-in event and its dashboard notification. Airport Simulation registers the schedule before sending device actions. The backend polls simulation status separately while the run is active and sends status changes through SignalR.
+
+```mermaid
+sequenceDiagram
+    actor Operator
+    participant UI as DevtoolsPage
+    participant Devtools as DevtoolsController
+    participant BackendRunner as Backend SimulationRunner
+    participant Scenario as Airport ScenarioRunner
+    participant Airports as AirportsController and AirportService
+    participant DeviceClient as DeviceCommandClient
+    participant DeviceSim as IoT Device Simulator
+    participant Brokers as Airport and regional brokers
+    participant Ingestion as MqttIngestion
+    participant Processor as EventProcessingService
+    participant DB as PostgreSQL
+    participant Notifier as SignalRDashboardNotifier
+    participant Hub as DashboardHub
+    participant Frontend as DashboardProvider and DevtoolsPage
+
+    Operator->>UI: Start selected scenario
+    UI->>Devtools: POST /api/devtools/simulation
+    Devtools->>BackendRunner: Start(scenarioId)
+    BackendRunner->>Scenario: POST /simulation/start
+    Scenario-->>BackendRunner: Accepted with Starting status
+    BackendRunner-->>Devtools: Starting status
+    Devtools-->>UI: 202 Accepted
+
+    Scenario->>Airports: POST /api/airports/schedule
+    Airports->>DB: Save flights and scheduled devices
+    DB-->>Airports: Commit
+    Airports-->>Scenario: Schedule accepted
+
+    Scenario->>DeviceClient: POST device action for check-in
+    DeviceClient->>DeviceSim: Execute device action
+    DeviceSim->>Brokers: Publish luggage event over MQTT
+    Brokers->>Ingestion: Forward airport topic to regional broker
+    Ingestion->>Processor: Process event
+    Processor->>DB: Store observation and update journey state in transaction
+    DB-->>Processor: Commit
+    Processor->>Notifier: Notify dashboard data changed
+    Notifier->>Hub: Broadcast change event
+    Hub-->>Frontend: SignalR notification
+    Frontend->>Frontend: Refresh dashboard data
+```
+
 ## Build and publish images
 
 Pushes to `main` validate all four Docker images. To publish, manually run **Build and publish** from `main` and enable the Docker Hub publish option. The workflow publishes `latest` and the commit SHA tags for backend, frontend, Airport Simulation, and IoT Device Simulator, then triggers Watchtower for the corresponding application container. Configure repository secrets `DOCKER_ACCESS_TOKEN`, `WATCHTOWER_TOKEN`, and `WATCHTOWER_URL`; Docker Hub username is `andreasfrost1004`.

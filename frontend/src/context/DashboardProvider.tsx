@@ -120,15 +120,14 @@ function useDashboardState() {
 }
 const DashboardContext = createContext<ReturnType<
   typeof useDashboardState> | null>(null);
+  
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const state = useDashboardState();
   return (
-    <DashboardContext.Provider value={{ ...state, airports: DUMMY_AIRPORTS }}>
+    <DashboardContext.Provider value={useDashboardState()}>
       {children}
     </DashboardContext.Provider>
   );
 }
-
 export function useDashboard() {
   const value = useContext(DashboardContext);
   if (!value) throw new Error('DashboardProvider is required');
