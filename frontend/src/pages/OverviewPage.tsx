@@ -60,7 +60,7 @@ export function OverviewPage() {
         </div>
         <AirportMap airports={airports} select={setSelected} />
         <p className="map-note">
-          Dashed marker borders indicate stale, unknown, or disconnected
+          Grey borders indicate stale, unknown, or disconnected
           telemetry. Map tiles require internet access.
         </p>
       </section>

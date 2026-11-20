@@ -29,6 +29,10 @@ export function AirportsPage() {
 
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (Object.values(form).some((value) => !value.trim())) {
+        setStatus({type: 'error', text: 'Please fill in all fields.',});
+    return;}
+
     setBusy(true);
     setStatus({ type: 'idle', text: '' });
 
@@ -77,7 +81,6 @@ export function AirportsPage() {
           Name
           <input
             id="airport-name"
-            required
             maxLength={120}
             placeholder="e.g. Billund Airport"
             value={form.name}
@@ -88,7 +91,6 @@ export function AirportsPage() {
           Latitude
           <input
             id="airport-lat"
-            required
             type="number"
             step="any"
             min="-90"
@@ -102,7 +104,6 @@ export function AirportsPage() {
           Longitude
           <input
             id="airport-lon"
-            required
             type="number"
             step="any"
             min="-180"

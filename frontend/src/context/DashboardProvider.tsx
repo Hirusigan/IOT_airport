@@ -16,6 +16,41 @@ import type { Statistics } from '../types/Statistics';
 import type { ConnectionStatus } from '../types/ConnectionStatus';
 import type { SimulationStatus } from '../types/SimulationStatus';
 
+const DUMMY_AIRPORTS = [
+  {
+    id: 'AAR',
+    name: 'Aarhus Airport',
+    latitude: 56.3,
+    longitude: 10.619,
+    businessStatus: 'red',
+    telemetryHealth: 'offline',
+  },
+  {
+    id: 'CPH',
+    name: 'Copenhagen Airport',
+    latitude: 55.618,
+    longitude: 12.656,
+    businessStatus: 'green',
+    telemetryHealth: 'healthy',
+  },
+  {
+    id: 'BLL',
+    name: 'Billund Airport',
+    latitude: 55.74,
+    longitude: 9.152,
+    businessStatus: 'orange',
+    telemetryHealth: 'degraded',
+  },
+  {
+    id: 'AAL',
+    name: 'Aalborg Airport',
+    latitude: 57.093,
+    longitude: 9.849,
+    businessStatus: 'green',
+    telemetryHealth: 'healthy',
+  },
+] as unknown as Airport[];
+
 function useDashboardState() {
   const [airports, setAirports] = useState<Airport[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -84,15 +119,16 @@ function useDashboardState() {
   };
 }
 const DashboardContext = createContext<ReturnType<
-  typeof useDashboardState
-> | null>(null);
+  typeof useDashboardState> | null>(null);
 export function DashboardProvider({ children }: { children: ReactNode }) {
+  const state = useDashboardState();
   return (
-    <DashboardContext.Provider value={useDashboardState()}>
+    <DashboardContext.Provider value={{ ...state, airports: DUMMY_AIRPORTS }}>
       {children}
     </DashboardContext.Provider>
   );
 }
+
 export function useDashboard() {
   const value = useContext(DashboardContext);
   if (!value) throw new Error('DashboardProvider is required');

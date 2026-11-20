@@ -15,6 +15,11 @@
   color: #243344;
   font-size: 12px;
 }
+
+.leaflet-interactive:focus {
+  outline: none;
+}
+
 @media (max-width: 600px) {
   .map {
     height: 330px;

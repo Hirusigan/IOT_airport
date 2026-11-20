@@ -53,8 +53,7 @@ export function AirportMap({
         {
           radius: 12,
           color: airport.telemetryHealth === 'healthy' ? '#fff' : '#536377',
-          weight: 4,
-          dashArray: airport.telemetryHealth === 'healthy' ? undefined : '3 3',
+          weight: 3,
           fillOpacity: 1,
           fillColor:
             { green: '#23a57a', orange: '#e79b23', red: '#df5353' }[
