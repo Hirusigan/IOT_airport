@@ -7,7 +7,7 @@ Airport Simulation (ASP.NET Core) sends flight schedules to the backend. IoT Dev
 Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`. Ensure the external `ingress` network used by your Cloudflare tunnel exists, then start the stack:
 
 ```sh
-docker compose up -d --build
+docker compose up -d
 ```
 
 Compose runs PostgreSQL, the default `regional`, `aar`, and `cph` brokers, backend, frontend, Airport Simulation, and IoT Device Simulator. It does not publish broker or frontend ports to the host. Cloudflare/tunnel routing remains your existing deployment setup; route to `http://frontend:80` on `ingress`. Cloudflare Access is unchanged.
@@ -31,7 +31,6 @@ Pushes to `main` validate all four Docker images. To publish, manually run **Bui
 On the server, update the stack with:
 
 ```sh
-docker compose pull
 docker compose up -d
 ```
 
@@ -39,26 +38,25 @@ Watchtower runs from your separate Compose file. Only the backend, frontend, and
 
 ## API
 
-| Endpoint                           | Purpose                                           |
-| ---------------------------------- | ------------------------------------------------- |
-| GET /api/airports                  | Airport metadata and status                       |
-| POST /api/airports                 | Register metadata, provision a broker, and seed default devices |
-| POST /api/airports/schedule        | Register a scenario's flight schedule and devices |
-| POST /api/airports/flights/{flightId}/departure | Record actual flight departure |
-| POST /api/airports/flights/{flightId}/arrival | Record actual flight arrival |
-| GET /api/airports/{id}             | Flights and alert history                         |
-| GET /api/luggage/{id}              | Luggage states and observations                   |
-| GET /api/alerts                    | Alerts and filters                                |
-| GET /api/statistics                | Persisted counts                                  |
-| GET /api/devtools/scenarios        | Available scenarios                               |
-| GET /api/devtools/simulation       | Current/last simulation status                    |
-| POST /api/devtools/simulation      | Start a scenario                                  |
-| POST /api/devtools/simulation/stop | Stop the active scenario                          |
-| POST /api/devtools/database/clear  | Clear application data                            |
-| POST /api/devtools/database/seed   | Add default airport/device records                |
-| GET /health                        | Database/MQTT readiness                           |
-| /hub                               | SignalR dashboard refresh and simulation-status notifications |
+| Endpoint | Controller / handler | Purpose |
+| --- | --- | --- |
+| GET /api/airports | AirportsController | Airport metadata and status |
+| POST /api/airports | AirportsController | Register metadata, provision a broker, and seed default devices |
+| POST /api/airports/schedule | AirportsController | Register a scenario's flight schedule and devices |
+| POST /api/airports/flights/{flightId}/departure | AirportsController | Record actual flight departure |
+| POST /api/airports/flights/{flightId}/arrival | AirportsController | Record actual flight arrival |
+| GET /api/airports/{id} | AirportsController | Flights and alert history |
+| GET /api/luggage/{id} | LuggageController | Luggage states and observations |
+| GET /api/alerts | AlertsController | Alerts and filters |
+| GET /api/statistics | StatisticsController | Persisted counts |
+| GET /api/devtools/scenarios | DevtoolsController | Available scenarios |
+| GET /api/devtools/simulation | DevtoolsController | Current/last simulation status |
+| POST /api/devtools/simulation | DevtoolsController | Start a scenario |
+| POST /api/devtools/simulation/stop | DevtoolsController | Stop the active scenario |
+| POST /api/devtools/database/clear | DevtoolsController | Clear application data |
+| POST /api/devtools/database/seed | DevtoolsController | Add default airport/device records |
+| /hub | DashboardHub | SignalR dashboard refresh and simulation-status notifications |
 
 ## Development notes
 
-The backend uses .NET 10, PostgreSQL, MQTTnet, and Docker.DotNet. The Airport Simulation and IoT Device Simulator are separate .NET 10 ASP.NET Core applications. Scenario definitions are stored in `scenarios`; the old C++ publisher and Docker Bake setup are removed from the runtime/build workflow.
+The backend uses .NET 10, PostgreSQL, MQTTnet, and Docker.DotNet. The Airport Simulation and IoT Device Simulator are separate .NET 10 ASP.NET Core applications. Scenario definitions are stored in `scenarios`.
