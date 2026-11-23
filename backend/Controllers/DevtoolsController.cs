@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Luggage;
 
 [ApiController, Route("api/devtools")]
-public class DevtoolsController(IDevtoolsService service) : ControllerBase
+public class DevtoolsController(IDevtoolsService service, ILogger<DevtoolsController> logger) : ControllerBase
 {
     [HttpGet("scenarios")]
     public async Task<IActionResult> Scenarios()
@@ -47,8 +47,16 @@ public class DevtoolsController(IDevtoolsService service) : ControllerBase
     [HttpPost("database/clear")]
     public async Task<IActionResult> Clear()
     {
-        await service.Clear();
-        return NoContent();
+        try
+        {
+            await service.Clear();
+            return NoContent();
+        }
+        catch (BrokerCleanupException ex)
+        {
+            logger.LogError(ex, "Airport broker cleanup failed after the database was cleared.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
+        }
     }
     [HttpPost("database/seed")]
     public async Task<IActionResult> Seed()

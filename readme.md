@@ -149,7 +149,7 @@ Watchtower runs from your separate Compose file. Only the backend, frontend, and
 | GET /api/devtools/simulation | DevtoolsController | Current/last simulation status |
 | POST /api/devtools/simulation | DevtoolsController | Start a scenario |
 | POST /api/devtools/simulation/stop | DevtoolsController | Stop the active scenario |
-| POST /api/devtools/database/clear | DevtoolsController | Clear application data |
+| POST /api/devtools/database/clear | DevtoolsController | Clear application data and remove dynamically provisioned airport brokers and their generated configuration |
 | POST /api/devtools/database/seed | DevtoolsController | Add default airport/device records |
 | /hub | DashboardHub | SignalR dashboard refresh and simulation-status notifications |
 
