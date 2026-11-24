@@ -19,9 +19,7 @@
   ],
   "devices": [
     { "airportId": "AAR", "id": "scanner-001", "type": "scanner" },
-    { "airportId": "AAR", "id": "gate-01", "type": "gate" },
-    { "airportId": "CPH", "id": "scanner-001", "type": "scanner" },
-    { "airportId": "CPH", "id": "gate-01", "type": "gate" }
+    { "airportId": "CPH", "id": "scanner-001", "type": "scanner" }
   ],
   "flights": [
     {
@@ -92,8 +90,6 @@
     {
       "time": 30,
       "eventType": "departure",
-      "airport": "AAR",
-      "deviceId": "gate-01",
       "flightId": "FLIGHT-OUT"
     },
     {
@@ -141,8 +137,6 @@
     {
       "time": 75,
       "eventType": "departure",
-      "airport": "CPH",
-      "deviceId": "gate-01",
       "flightId": "FLIGHT-RETURN"
     },
     {
