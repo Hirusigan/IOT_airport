@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Luggage;
 
 [ApiController, Route("api/devtools")]
-public class DevtoolsController(IDevtoolsService service, ILogger<DevtoolsController> logger) : ControllerBase
+public class DevtoolsController(IDevtoolsService service) : ControllerBase
 {
     [HttpGet("scenarios")]
     public async Task<IActionResult> Scenarios()
@@ -54,7 +54,6 @@ public class DevtoolsController(IDevtoolsService service, ILogger<DevtoolsContro
         }
         catch (BrokerCleanupException ex)
         {
-            logger.LogError(ex, "Airport broker cleanup failed after the database was cleared.");
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
         }
     }

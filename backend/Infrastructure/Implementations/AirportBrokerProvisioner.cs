@@ -73,14 +73,8 @@ public sealed class AirportBrokerProvisioner(
     public async Task RemoveProvisionedBrokers()
     {
         using var client = CreateDockerClient();
-        var containers = await client.Containers.ListContainersAsync(new ContainersListParameters
-        {
-            All = true,
-            Filters = new Dictionary<string, IDictionary<string, bool>>
-            {
-                ["volume"] = new Dictionary<string, bool> { [Volume] = true }
-            }
-        });
+        var containers = await client.Containers.ListContainersAsync(
+            new ContainersListParameters { All = true });
 
         foreach (var container in containers.Where(IsProvisionedBroker))
         {
@@ -98,7 +92,6 @@ public sealed class AirportBrokerProvisioner(
             }
         }
 
-        // Keep the configuration until container removal succeeds so a partial reset can be retried.
         var root = ConfigPath;
         if (Directory.Exists(root))
         {

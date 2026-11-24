@@ -12,7 +12,6 @@ public class AirportService(
     IDashboardNotifier notifications,
     TimeProvider clock,
     IAirportBrokerProvisioner brokers,
-    EnvironmentSetupLock setupLock,
     TrackingDbContext db) : IAirportService
 {
     private async Task<AirportDTO> View(Airport airport)
@@ -66,7 +65,6 @@ public class AirportService(
     public async Task<AirportDTO> Register(Airport airport)
     {
         ValidateAirport(airport);
-        using var setup = await setupLock.Acquire();
         if (await airports.GetAsync(airport.Id) != null)
         {
             throw new ConflictException("Airport already exists");

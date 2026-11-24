@@ -146,7 +146,7 @@ export function DevtoolsPage() {
                     setSelected(null);
                     setSearched('');
                     setConfirm(false);
-                  }, 'Database cleared and added airport brokers removed.');
+                  }, 'Database cleared.');
                 }}
               >
                 <FiTrash2 aria-hidden="true" focusable="false" />

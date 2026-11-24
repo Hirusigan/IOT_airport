@@ -9,7 +9,6 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("ConnectionStrings__Database is required")));
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddSingleton<IAirportBrokerProvisioner, AirportBrokerProvisioner>();
-        services.AddSingleton<EnvironmentSetupLock>();
         services.AddHttpClient();
         services.AddSingleton<SimulationRunner>();
         services.AddSingleton<ISimulationRunner>(sp => sp.GetRequiredService<SimulationRunner>());
