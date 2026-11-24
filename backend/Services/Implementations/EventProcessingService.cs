@@ -22,26 +22,17 @@ public class EventProcessingService(
         }
 
         await validator.Validate(topic, envelope, region);
-        var eventType = ModelValues.ParseEventType(envelope.EventType);
         if (await events.ExistsAsync(envelope.EventId))
         {
             return false;
         }
 
-        string? journeyId = null;
+        string journeyId;
         await using (var transaction = await events.BeginTransactionAsync())
         {
             var now = clock.GetUtcNow();
-            var observation = CreateObservation(envelope, eventType, raw, now);
-
-            if (eventType == EventType.Luggage)
-            {
-                journeyId = await ProcessLuggage(envelope, observation, now);
-            }
-            else
-            {
-                await ProcessDeparture(envelope);
-            }
+            var observation = CreateObservation(envelope, raw, now);
+            journeyId = await ProcessLuggage(envelope, observation, now);
 
             events.Add(observation);
             await UpdateAirportLastSeen(envelope.AirportId, now);
@@ -54,13 +45,13 @@ public class EventProcessingService(
         return true;
     }
 
-    private static Observation CreateObservation(Envelope envelope, EventType eventType, string raw, DateTimeOffset now) => new()
+    private static Observation CreateObservation(Envelope envelope, string raw, DateTimeOffset now) => new()
     {
         EventId = envelope.EventId,
         RunId = envelope.SimulationRunId,
         AirportId = envelope.AirportId,
         DeviceId = envelope.DeviceId,
-        EventType = eventType,
+        EventType = EventType.Luggage,
         SchemaVersion = envelope.SchemaVersion,
         OccurredAt = envelope.OccurredAt,
         ReceivedAt = now,
@@ -178,19 +169,6 @@ public class EventProcessingService(
             AlertSeverity.Red,
             RuleDecisions.Unexpected(envelope.AirportId, stage, envelope.OccurredAt, flight),
             now);
-    }
-
-    private async Task ProcessDeparture(Envelope envelope)
-    {
-        var departure = JsonContract.Data<DepartureData>(envelope.Data);
-        var flight = await flights.GetAsync(departure.FlightId)
-            ?? throw new ArgumentException("Missing flight");
-        if (flight.ActualDeparture != null && flight.ActualDeparture != departure.DepartedAt)
-        {
-            throw new ArgumentException("Conflicting departure evidence");
-        }
-
-        flight.ActualDeparture = departure.DepartedAt;
     }
 
     private async Task UpdateAirportLastSeen(string airportId, DateTimeOffset now)

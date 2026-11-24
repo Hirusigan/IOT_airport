@@ -11,23 +11,15 @@ public class EventValidationService(
 {
     public async Task Validate(string topic, Envelope e, string region)
     {
+        if (e.EventType != "luggage")
+        {
+            throw new ArgumentException("MQTT events must be luggage scans");
+        }
+
         var deviceType = ValidateTopic(topic, e);
-        var eventType = ModelValues.ParseEventType(e.EventType);
         ValidateEnvelope(e);
         await ValidateSource(e, region, deviceType);
-
-        if (eventType == EventType.Luggage)
-        {
-            await ValidateLuggage(e, deviceType);
-        }
-        else if (eventType == EventType.Departure)
-        {
-            await ValidateDeparture(e, deviceType);
-        }
-        else
-        {
-            throw new ArgumentException("Unsupported eventType");
-        }
+        await ValidateLuggage(e, deviceType);
     }
 
     private static string ValidateTopic(string topic, Envelope e)
@@ -142,22 +134,6 @@ public class EventValidationService(
             occurredAt < previousState.OccurredAt)
         {
             throw new ArgumentException("Transfer requires confirmed arrival of the preceding leg");
-        }
-    }
-
-    private async Task ValidateDeparture(Envelope e, string deviceType)
-    {
-        if (ModelValues.ParseDeviceType(deviceType) != DeviceType.Gate)
-        {
-            throw new ArgumentException("Departure requires a gate");
-        }
-
-        var departure = JsonContract.Data<DepartureData>(e.Data);
-        var flight = await flights.GetAsync(departure.FlightId);
-        if (flight == null || flight.Origin != e.AirportId || flight.RunId != e.SimulationRunId ||
-            departure.DepartedAt == default || departure.DepartedAt.Offset != TimeSpan.Zero || departure.DepartedAt != e.OccurredAt)
-        {
-            throw new ArgumentException("Invalid departure flight/time/run");
         }
     }
 }

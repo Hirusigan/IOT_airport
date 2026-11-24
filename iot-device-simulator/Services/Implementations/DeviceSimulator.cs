@@ -36,7 +36,7 @@ public sealed class DeviceSimulator(IMqttEventPublisher publisher) : IDeviceSimu
     public async Task Execute(DeviceActionCommand command, CancellationToken token)
     {
         ValidateCommand(command);
-        var data = CreateEventData(command);
+        var data = CreateLuggageData(command);
         var envelope = new DeviceEventEnvelope(
             1,
             Guid.NewGuid().ToString(),
@@ -73,22 +73,9 @@ public sealed class DeviceSimulator(IMqttEventPublisher publisher) : IDeviceSimu
             throw new ArgumentException("Invalid device action");
         }
 
-        if (command.DeviceType is not ("scanner" or "gate") ||
-            command.EventType is not ("luggage" or "departure") ||
-            (command.EventType == "luggage" && command.DeviceType != "scanner") ||
-            (command.EventType == "departure" && command.DeviceType != "gate"))
+        if (command.DeviceType != "scanner" || command.EventType != "luggage")
         {
-            throw new ArgumentException("Device type does not support this event");
-        }
-
-        if (command.EventType == "departure")
-        {
-            if (string.IsNullOrWhiteSpace(command.FlightId))
-            {
-                throw new ArgumentException("Departure needs a flight ID");
-            }
-
-            return;
+            throw new ArgumentException("Device actions must be luggage scans from a scanner");
         }
 
         ValidateLuggage(command);
@@ -105,22 +92,6 @@ public sealed class DeviceSimulator(IMqttEventPublisher publisher) : IDeviceSimu
         {
             throw new ArgumentException("Invalid luggage action");
         }
-    }
-
-    private static JsonElement CreateEventData(DeviceActionCommand command)
-    {
-        return command.EventType == "departure"
-            ? CreateDepartureData(command)
-            : CreateLuggageData(command);
-    }
-
-    private static JsonElement CreateDepartureData(DeviceActionCommand command)
-    {
-        return JsonSerializer.SerializeToElement(new
-        {
-            flightId = command.FlightId,
-            departedAt = command.OccurredAt
-        });
     }
 
     private static JsonElement CreateLuggageData(DeviceActionCommand command)
