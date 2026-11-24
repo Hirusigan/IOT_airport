@@ -47,8 +47,15 @@ public class DevtoolsController(IDevtoolsService service) : ControllerBase
     [HttpPost("database/clear")]
     public async Task<IActionResult> Clear()
     {
-        await service.Clear();
-        return NoContent();
+        try
+        {
+            await service.Clear();
+            return NoContent();
+        }
+        catch (BrokerCleanupException ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
+        }
     }
     [HttpPost("database/seed")]
     public async Task<IActionResult> Seed()

@@ -77,6 +77,8 @@ services:
   backend:
     image: andreasfrost1004/luggagetracker-backend:latest
     restart: unless-stopped
+    pre_stop:
+      - command: ["dotnet", "/app/Backend.dll", "--cleanup-brokers"]
     environment:
       ConnectionStrings__Database: Host=postgres;Database=luggage;Username=luggage;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       Mqtt__Host: regional

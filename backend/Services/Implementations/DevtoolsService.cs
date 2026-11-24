@@ -5,6 +5,7 @@ public class DevtoolsService(
     IDevtoolsRepository repository,
     TrackingDbContext db,
     IRepository<Airport> airports,
+    IAirportBrokerProvisioner brokers,
     IDashboardNotifier notifications) : IDevtoolsService
 {
     public Task<IReadOnlyList<ScenarioDTO>> GetScenarios() => runner.GetScenarios();
@@ -19,7 +20,18 @@ public class DevtoolsService(
     {
         await runner.Stop();
         await repository.ClearAsync();
-        await notifications.Send();
+        try
+        {
+            await brokers.RemoveProvisionedBrokers();
+        }
+        catch (Exception ex)
+        {
+            throw new BrokerCleanupException(ex);
+        }
+        finally
+        {
+            await notifications.Send();
+        }
     }
 
     public async Task Seed()

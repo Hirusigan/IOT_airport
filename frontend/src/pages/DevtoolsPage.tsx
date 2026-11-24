@@ -132,8 +132,9 @@ export function DevtoolsPage() {
             <p>
               This stops the active simulation and deletes all airports,
               devices, flights, journeys, observations, alerts and diagnostics.
-              It cannot be undone. Seed defaults afterward to restore the two
-              default airports.
+              It also removes brokers and configuration files for airports added
+              through the app. This cannot be undone. Seed defaults afterward to
+              restore the two default airports.
             </p>
             <div className="devtools-actions">
               <button

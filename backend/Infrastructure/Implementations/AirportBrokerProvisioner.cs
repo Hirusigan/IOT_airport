@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.RegularExpressions;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +14,8 @@ public sealed class AirportBrokerProvisioner(
     private const string Image = $"{ImageName}:{ImageTag}";
     private const string Network = "airport-brokers";
     private const string Volume = "airport-broker-config";
+    private const string BrokerMountPath = "/runtime";
+    private string ConfigPath => config["Brokers:ConfigPath"] ?? "/broker-config";
 
     public async Task Provision(string airportId)
     {
@@ -39,7 +42,7 @@ public sealed class AirportBrokerProvisioner(
         {
             Name = containerName,
             Image = Image,
-            Cmd = ["mosquitto", "-c", $"/runtime/{confName}"],
+            Cmd = ["mosquitto", "-c", $"{BrokerMountPath}/{confName}"],
             HostConfig = new HostConfig
             {
                 RestartPolicy = new RestartPolicy { Name = RestartPolicyKind.UnlessStopped },
@@ -50,7 +53,7 @@ public sealed class AirportBrokerProvisioner(
                     {
                         Type = "volume",
                         Source = Volume,
-                        Target = "/runtime",
+                        Target = BrokerMountPath,
                         ReadOnly = true
                     }
                 ]
@@ -67,9 +70,58 @@ public sealed class AirportBrokerProvisioner(
         await StartContainerAsync(client, created.ID, airportId, "Started");
     }
 
+    public async Task RemoveProvisionedBrokers()
+    {
+        using var client = CreateDockerClient();
+        var containers = await client.Containers.ListContainersAsync(
+            new ContainersListParameters { All = true });
+
+        foreach (var container in containers.Where(IsProvisionedBroker))
+        {
+            try
+            {
+                await client.Containers.RemoveContainerAsync(container.ID, new ContainerRemoveParameters
+                {
+                    Force = true,
+                    RemoveVolumes = true
+                });
+            }
+            catch (DockerApiException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                // Another Docker client already removed the container.
+            }
+        }
+
+        var root = ConfigPath;
+        if (Directory.Exists(root))
+        {
+            var files = Directory.EnumerateFiles(root)
+                .Where(path => Regex.IsMatch(Path.GetFileName(path), @"\A[A-Z]{3}\.(conf|acl)\z"));
+            foreach (var file in files)
+            {
+                File.Delete(file);
+            }
+        }
+    }
+
+    internal static async Task<bool> TryRunCleanupCommandAsync(string[] args)
+    {
+        if (args is not ["--cleanup-brokers"])
+            return false;
+
+        var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+        await new AirportBrokerProvisioner(configuration).RemoveProvisionedBrokers();
+        return true;
+    }
+
+    private static bool IsProvisionedBroker(ContainerListResponse container) =>
+        container.Names.Any(name => Regex.IsMatch(name.TrimStart('/'), @"\Aairport-[a-z]{3}\z")) &&
+        container.Mounts.Any(mount => mount.Type == "volume" && mount.Name == Volume &&
+            mount.Destination == BrokerMountPath && !mount.RW);
+
     private async Task<(string ConfName, string AclName)> WriteBrokerFilesAsync(string airportId)
     {
-        var root = config["Brokers:ConfigPath"] ?? "/broker-config";
+        var root = ConfigPath;
         Directory.CreateDirectory(root);
 
         var confName = $"{airportId}.conf";
@@ -78,7 +130,7 @@ public sealed class AirportBrokerProvisioner(
         var conf = $"""
             listener 1883 0.0.0.0
             allow_anonymous true
-            acl_file /runtime/{aclName}
+            acl_file {BrokerMountPath}/{aclName}
             connection regional-{airportId}
             address regional:1883
             local_clientid bridge-{airportId}
