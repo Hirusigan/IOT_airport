@@ -24,19 +24,9 @@
       "type": "scanner"
     },
     {
-      "airportId": "AAR",
-      "id": "gate-01",
-      "type": "gate"
-    },
-    {
       "airportId": "CPH",
       "id": "scanner-001",
       "type": "scanner"
-    },
-    {
-      "airportId": "CPH",
-      "id": "gate-01",
-      "type": "gate"
     }
   ],
   "events": [
@@ -113,16 +103,12 @@
       "journeyId": "JOURNEY-004"
     },
     {
-      "airport": "AAR",
       "time": 60,
-      "deviceId": "gate-01",
       "flightId": "FLIGHT-001",
       "eventType": "departure"
     },
     {
-      "airport": "AAR",
       "time": 65,
-      "deviceId": "gate-01",
       "flightId": "FLIGHT-002",
       "eventType": "departure"
     },

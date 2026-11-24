@@ -198,7 +198,7 @@ public sealed class ScenarioRunner(ISimulationBackendClient backend, IDeviceComm
             }
             else
             {
-                await ExecuteDeviceEvent(root, airports, action.Event!.Value, runId, token);
+                await ExecuteScenarioEvent(root, airports, action.Event!.Value, runId, token);
             }
 
             if (stopSignal.IsCompleted)
@@ -231,7 +231,7 @@ public sealed class ScenarioRunner(ISimulationBackendClient backend, IDeviceComm
             .ThenBy(action => action.FlightId == null ? 1 : 0);
     }
 
-    private async Task ExecuteDeviceEvent(
+    private async Task ExecuteScenarioEvent(
         JsonElement root,
         JsonElement[] airports,
         JsonElement scenarioEvent,
@@ -239,60 +239,35 @@ public sealed class ScenarioRunner(ISimulationBackendClient backend, IDeviceComm
         CancellationToken token)
     {
         var occurredAt = DateTimeOffset.UtcNow;
-        var command = CreateDeviceCommand(root, airports, scenarioEvent, runId, occurredAt);
-        if (command.EventType == "departure")
-        {
-            await backend.RecordDeparture(
-                command.FlightId!,
-                new FlightDepartureRequest(runId, occurredAt),
-                token);
-        }
-
-        await devices.Execute(command, token);
-        Set(Status with { PublishedEvents = Status.PublishedEvents + 1 });
-    }
-
-    private static DeviceActionCommand CreateDeviceCommand(
-        JsonElement root,
-        JsonElement[] airports,
-        JsonElement scenarioEvent,
-        string runId,
-        DateTimeOffset occurredAt)
-    {
-        var airportId = scenarioEvent.GetProperty("airport").GetString()!;
         var eventType = scenarioEvent.GetProperty("eventType").GetString()!;
-        var deviceId = scenarioEvent.GetProperty("deviceId").GetString()!;
-        var airport = airports.First(item => item.GetProperty("code").GetString() == airportId);
-        var deviceType = eventType == "departure" ? "gate" : "scanner";
-
         if (eventType == "departure")
         {
             var flightId = Scope(runId, scenarioEvent.GetProperty("flightId").GetString()!);
-            return new DeviceActionCommand(
-                airportId,
-                airport.GetProperty("host").GetString()!,
-                airport.GetProperty("port").GetInt32(),
-                deviceId,
-                deviceType,
-                eventType,
-                runId,
-                occurredAt,
-                FlightId: flightId);
+            await backend.RecordDeparture(
+                flightId,
+                new FlightDepartureRequest(runId, occurredAt),
+                token);
+        }
+        else
+        {
+            var command = CreateLuggageCommand(root, airports, scenarioEvent, eventType, runId, occurredAt);
+            await devices.Execute(command, token);
         }
 
-        return CreateLuggageCommand(root, airport, airportId, deviceId, eventType, runId, occurredAt, scenarioEvent);
+        Set(Status with { PublishedEvents = Status.PublishedEvents + 1 });
     }
 
     private static DeviceActionCommand CreateLuggageCommand(
         JsonElement root,
-        JsonElement airport,
-        string airportId,
-        string deviceId,
+        JsonElement[] airports,
+        JsonElement scenarioEvent,
         string eventType,
         string runId,
-        DateTimeOffset occurredAt,
-        JsonElement scenarioEvent)
+        DateTimeOffset occurredAt)
     {
+        var airportId = scenarioEvent.GetProperty("airport").GetString()!;
+        var deviceId = scenarioEvent.GetProperty("deviceId").GetString()!;
+        var airport = airports.First(item => item.GetProperty("code").GetString() == airportId);
         var rawJourneyId = scenarioEvent.GetProperty("journeyId").GetString()!;
         var luggage = root.GetProperty("luggage")
             .EnumerateArray()

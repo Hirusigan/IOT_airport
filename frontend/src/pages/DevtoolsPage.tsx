@@ -87,7 +87,7 @@ export function DevtoolsPage() {
           <div className="devtools-status" aria-live="polite">
             <h3>Status: {status.state}</h3>
             <p>
-              {status.publishedEvents} / {status.totalEvents} events published
+              {status.publishedEvents} / {status.totalEvents} actions completed
             </p>
             {status.runId && <small>Run: {status.runId}</small>}
             {status.error && <p role="alert">{status.error}</p>}

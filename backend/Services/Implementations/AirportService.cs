@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 
 namespace Luggage;
@@ -7,6 +8,7 @@ public class AirportService(
     IDeviceRepository devices,
     IAlertRepository alerts,
     IFlightRepository flights,
+    IEventRepository events,
     BrokerHealth health,
     RuleSettings settings,
     IDashboardNotifier notifications,
@@ -207,18 +209,35 @@ public class AirportService(
     public async Task RecordDeparture(string flightId, FlightDepartureUpdate departure)
     {
         ValidateDeparture(departure);
+        // Match the precision of the stored departure so a repeated request can be accepted.
+        var departedAt = departure.DepartedAt.AddTicks(-(departure.DepartedAt.Ticks % TimeSpan.TicksPerMicrosecond));
 
         try
         {
             await using var transaction = await airports.BeginTransactionAsync();
             var flight = await GetFlightForRun(flightId, departure.SimulationRunId);
-            if (flight.ActualDeparture != null && flight.ActualDeparture != departure.DepartedAt)
+            if (flight.ActualDeparture == null)
+            {
+                flight.ActualDeparture = departedAt;
+                events.Add(new Observation
+                {
+                    EventId = Guid.NewGuid().ToString(),
+                    RunId = flight.RunId,
+                    AirportId = flight.Origin,
+                    DeviceId = "airport-simulation",
+                    EventType = EventType.Departure,
+                    SchemaVersion = 1,
+                    OccurredAt = departedAt,
+                    ReceivedAt = clock.GetUtcNow(),
+                    Payload = JsonSerializer.Serialize(new { flightId, departedAt })
+                });
+                await airports.SaveChangesAsync();
+            }
+            else if (flight.ActualDeparture != departedAt)
             {
                 throw new ConflictException("Conflicting departure evidence");
             }
 
-            flight.ActualDeparture = departure.DepartedAt;
-            await airports.SaveChangesAsync();
             await transaction.CommitAsync();
         }
         catch (DbUpdateConcurrencyException)
