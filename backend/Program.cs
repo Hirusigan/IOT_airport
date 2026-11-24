@@ -1,5 +1,8 @@
 using Luggage;
 
+if (await AirportBrokerProvisioner.TryRunCleanupCommandAsync(args))
+    return;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddLuggageBackend(builder.Configuration);
 var app = builder.Build();

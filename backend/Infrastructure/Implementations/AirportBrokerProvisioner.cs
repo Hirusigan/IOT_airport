@@ -104,6 +104,16 @@ public sealed class AirportBrokerProvisioner(
         }
     }
 
+    internal static async Task<bool> TryRunCleanupCommandAsync(string[] args)
+    {
+        if (args is not ["--cleanup-brokers"])
+            return false;
+
+        var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+        await new AirportBrokerProvisioner(configuration).RemoveProvisionedBrokers();
+        return true;
+    }
+
     private static bool IsProvisionedBroker(ContainerListResponse container) =>
         container.Names.Any(name => Regex.IsMatch(name.TrimStart('/'), @"\Aairport-[a-z]{3}\z")) &&
         container.Mounts.Any(mount => mount.Type == "volume" && mount.Name == Volume &&
