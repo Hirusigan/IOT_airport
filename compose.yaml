@@ -2,10 +2,10 @@ services:
   postgres:
     image: postgres:17.6-alpine
     restart: unless-stopped
+    env_file: .env.example
     environment:
       POSTGRES_DB: luggage
       POSTGRES_USER: luggage
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     volumes: ["postgres-data:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U luggage -d luggage"]
@@ -77,10 +77,10 @@ services:
   backend:
     image: andreasfrost1004/luggagetracker-backend:latest
     restart: unless-stopped
+    env_file: .env.example
     pre_stop:
       - command: ["dotnet", "/app/Backend.dll", "--cleanup-brokers"]
     environment:
-      ConnectionStrings__Database: Host=postgres;Database=luggage;Username=luggage;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       Mqtt__Host: regional
       Mqtt__Region: EU
       Rules__LoadingCutoffSeconds: 20
